@@ -1,9 +1,9 @@
 import Category from '../models/category.js';
-import { getCategoriesQuerySchema } from '../validations/categoryValidation.js';
+import { createCategorySchema } from '../validations/categoryValidation.js';
 
 export const getAllCategories = async (req, res) => {
   try {
-    const { error } = getCategoriesQuerySchema.validate(req.query);
+    const { error } = createCategorySchema.validate(req.query);
 
     if (error) {
       return res.status(400).json({

@@ -1,5 +1,7 @@
-import Joi from 'joi';
+import { Joi, Segments } from 'celebrate';
 
-export const createCategorySchema = Joi.object({
-  name: Joi.string().trim().min(2).max(32).required(),
-});
+export const createCategorySchema = {
+  [Segments.BODY]: Joi.object({
+    name: Joi.string().trim().required(),
+  }),
+};
