@@ -29,7 +29,7 @@ app.get('/', (req, res) => {
   });
 });
 
-app.use('/categories', categoriesRoutes);
+app.use(categoriesRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
