@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import { notFoundHandler } from './middleware/notFoundHandler.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { logger } from './middleware/logger.js';
+import { connectMongoDB } from './db/connectMongoDB.js';
 
 const PORT = Number(process.env.PORT) || 4000;
 
@@ -29,6 +30,8 @@ app.get('/', (req, res) => {
 
 app.use(notFoundHandler);
 app.use(errorHandler);
+
+await connectMongoDB();
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
