@@ -15,7 +15,7 @@
   "keywords": [],
   "author": "Oksana Vakuliak <oksanabagrova19@gmail.com>",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "celebrate": "^15.0.3",
