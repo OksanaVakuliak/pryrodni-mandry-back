@@ -1,4 +1,4 @@
-import { mongoose } from 'mongoose';
+import mongoose from 'mongoose';
 import { Story } from '../models/story.js';
 import createHttpError from 'http-errors';
 
