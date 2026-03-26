@@ -1,6 +1,6 @@
 import { celebrate } from 'celebrate';
 import { Router } from 'express';
-import getAllStories from '../controllers/storyController';
+import getAllStories from '../controllers/storyController.js';
 
 const storiesRouter = Router();
 
