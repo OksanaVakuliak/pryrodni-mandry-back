@@ -2,7 +2,7 @@ import { mongoose } from 'mongoose';
 import { Story } from '../models/story.js';
 import createHttpError from 'http-errors';
 
-const getStories = async (req, res) => {
+const getAllStories = async (req, res) => {
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const limit = Math.max(1, parseInt(req.query.limit) || 6);
   const { category } = req.query;
@@ -36,4 +36,4 @@ const getStories = async (req, res) => {
   });
 };
 
-export default getStories;
+export default getAllStories;
