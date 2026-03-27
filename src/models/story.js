@@ -7,11 +7,11 @@ const storySchema = new Schema(
       required: true,
       trim: true,
     },
-    content: {
+    article: {
       type: String,
       required: true,
     },
-    image: {
+    img: {
       type: String,
       required: true,
     },
@@ -20,19 +20,27 @@ const storySchema = new Schema(
       ref: 'category',
       required: true,
     },
-    author: {
+    ownerId: {
       type: Schema.Types.ObjectId,
       ref: 'user',
       required: true,
     },
-    savedByUsers: {
-      type: [Schema.Types.ObjectId],
-      ref: 'user',
-      default: [],
+    rate: {
+      type: Number,
+      default: 0,
     },
+    date: {
+      type: String,
+    },
+    savedByUsers: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'user',
+      },
+    ],
   },
   {
-    timestamps: true,
+    timestamps: false,
     versionKey: false,
   },
 );
