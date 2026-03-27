@@ -7,6 +7,9 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { logger } from './middleware/logger.js';
 import { connectMongoDB } from './db/connectMongoDB.js';
 import categoriesRoutes from './routes/categories.js';
+import storiesRouter from './routes/stories.js';
+import './models/story.js';
+import './models/user.js';
 
 const PORT = Number(process.env.PORT) || 4000;
 
@@ -28,6 +31,7 @@ app.get('/', (req, res) => {
     message: 'Welcome to Pryrodni Mandry API',
   });
 });
+app.use('/stories', storiesRouter);
 
 app.use(categoriesRoutes);
 
