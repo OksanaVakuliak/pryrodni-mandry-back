@@ -32,7 +32,7 @@ app.get('/', (req, res) => {
 });
 
 app.use(authRoutes);
-app.use(travellersRouter);
+app.use('/travellers', travellersRouter);
 app.use(categoriesRoutes);
 
 app.use(notFoundHandler);
