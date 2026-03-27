@@ -91,7 +91,7 @@ export const postSaveStory = async (req, res) => {
 
   let finalStory;
   if (!alreadySaved) {
-    finalStory = await Story.findOneAndUpdate(
+    finalStory = await Story.findByIdAndUpdate(
       id,
       {
         $addToSet: { savedByUsers: userId },
@@ -127,7 +127,7 @@ export const deleteSaveStory = async (req, res) => {
 
   let finalStory;
   if (isSaved) {
-    finalStory = await Story.findOneAndDelete(
+    finalStory = await Story.findByIdAndUpdate(
       {
         _id: id,
         savedByUsers: userId,
