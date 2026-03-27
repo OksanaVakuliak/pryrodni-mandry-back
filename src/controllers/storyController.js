@@ -8,11 +8,19 @@ export const createStory = async (req, res, next) => {
       throw createHttpError(400, 'No file');
     }
 
-    const result = await saveFileToCloudinary(req.file.buffer, req.user._id);
+    const buffer = Buffer.isBuffer(req.file.buffer)
+      ? req.file.buffer
+      : Buffer.from(req.file.buffer);
+
+    const result = await saveFileToCloudinary({ buffer }, req.user._id);
+
+    if (!result) {
+      throw createHttpError(500, 'Image upload failed');
+    }
 
     const story = await Story.create({
       ...req.body,
-      image: result.secure_url,
+      image: result,
       author: req.user._id,
     });
 
