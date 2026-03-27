@@ -8,13 +8,10 @@ import { logger } from './middleware/logger.js';
 import { connectMongoDB } from './db/connectMongoDB.js';
 import travellersRouter from './routes/travellers.js';
 import categoriesRoutes from './routes/categories.js';
-<<<<<<< HEAD
 import storiesRouter from './routes/stories.js';
 import './models/story.js';
 import './models/user.js';
-=======
 import authRoutes from './routes/auth.js';
->>>>>>> b0ad85161e7762ac11bef9f137b8c098d513105b
 
 const PORT = Number(process.env.PORT) || 4000;
 
