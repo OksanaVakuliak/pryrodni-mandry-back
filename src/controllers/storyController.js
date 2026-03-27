@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import mongoose from 'mongoose';
 import Story from '../models/story.js';
 import createHttpError from 'http-errors';
@@ -41,5 +40,3 @@ const getAllStories = async (req, res) => {
 };
 
 export default getAllStories;
-=======
->>>>>>> b0ad85161e7762ac11bef9f137b8c098d513105b
