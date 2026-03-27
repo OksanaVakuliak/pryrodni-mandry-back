@@ -1,21 +1,12 @@
 import Category from '../models/category.js';
-import { createCategorySchema } from '../validations/categoryValidation.js';
+import createHttpError from 'http-errors';
 
 export const getAllCategories = async (req, res) => {
-  try {
-    const { error } = createCategorySchema.validate(req.query);
+  const categories = await Category.find({}).sort({ name: 1 });
 
-    if (error) {
-      return res.status(400).json({
-        message: error.details[0].message,
-      });
-    }
-
-    const categories = await Category.find({}).sort({ name: 1 });
-
-    return res.status(200).json(categories);
-  } catch (error) {
-    console.error('Error fetching categories:', error);
-    return res.status(500).json({ message: 'Server error' });
+  if (!categories) {
+    throw createHttpError(404, 'Categories not found');
   }
+
+  return res.status(200).json(categories);
 };
