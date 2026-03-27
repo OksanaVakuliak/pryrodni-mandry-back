@@ -4,19 +4,35 @@ import {
   getAllStories,
   getPopularStories,
   getRecommendedStories,
+  postSaveStory,
+  deleteSaveStory,
 } from '../controllers/storyController.js';
-import { getAllStoriesSchema } from '../validations/storyValidation.js';
+import {
+  getAllStoriesSchema,
+  patchSaveStorySchema,
+} from '../validations/storyValidation.js';
+import { authenticate } from '../middleware/authenticate.js';
 
 const storiesRouter = Router();
 
 storiesRouter.get('/stories', celebrate(getAllStoriesSchema), getAllStories);
 
-storiesRouter.get(
-  '/stories/popular',
-  celebrate(getAllStoriesSchema),
-  getPopularStories,
-);
+storiesRouter.get('/stories/popular', getPopularStories);
 
 storiesRouter.get('/stories/:id/recommended', getRecommendedStories);
+
+storiesRouter.patch(
+  '/stories/:id/save',
+  authenticate,
+  celebrate(patchSaveStorySchema),
+  postSaveStory,
+);
+
+storiesRouter.patch(
+  '/stories/:id/delete',
+  authenticate,
+  celebrate(patchSaveStorySchema),
+  deleteSaveStory,
+);
 
 export default storiesRouter;
