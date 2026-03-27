@@ -6,6 +6,7 @@ import { notFoundHandler } from './middleware/notFoundHandler.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { logger } from './middleware/logger.js';
 import { connectMongoDB } from './db/connectMongoDB.js';
+import travellersRouter from './routes/travellers.js';
 
 const PORT = Number(process.env.PORT) || 4000;
 
@@ -27,6 +28,8 @@ app.get('/', (req, res) => {
     message: 'Welcome to Pryrodni Mandry API',
   });
 });
+
+app.use('/travellers', travellersRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
