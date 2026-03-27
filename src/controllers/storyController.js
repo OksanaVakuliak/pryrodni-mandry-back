@@ -73,3 +73,78 @@ export const getRecommendedStories = async (req, res) => {
 
   res.status(200).json(stories);
 };
+
+export const postSaveStory = async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user._id;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw createHttpError(400, 'Invalid story ID');
+  }
+
+  const story = await Story.findById(id);
+  if (!story) {
+    throw createHttpError(404, 'Story not found');
+  }
+
+  const alreadySaved = story.savedByUsers.some((uid) => uid.equals(userId));
+
+  let finalStory;
+  if (!alreadySaved) {
+    finalStory = await Story.findOneAndUpdate(
+      id,
+      {
+        $addToSet: { savedByUsers: userId },
+        $inc: { rate: 1 },
+      },
+      { returnDocument: 'after' },
+    );
+  } else {
+    finalStory = story;
+  }
+
+  res.status(200).json({
+    isSaved: true,
+    savesCount: finalStory.savedByUsers.length,
+    message: 'Story saved successfully',
+  });
+};
+
+export const deleteSaveStory = async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user._id;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw createHttpError(400, 'Invalid story ID');
+  }
+
+  const story = await Story.findById(id);
+  if (!story) {
+    throw createHttpError(404, 'Story not found');
+  }
+
+  const isSaved = story.savedByUsers.some((uid) => uid.equals(userId));
+
+  let finalStory;
+  if (isSaved) {
+    finalStory = await Story.findOneAndDelete(
+      {
+        _id: id,
+        savedByUsers: userId,
+      },
+      {
+        $pull: { savedByUsers: userId },
+        $inc: { rate: -1 },
+      },
+      { returnDocument: 'after' },
+    );
+  } else {
+    finalStory = story;
+  }
+
+  res.status(200).json({
+    isSaved: false,
+    savesCount: finalStory.savedByUsers.length,
+    message: 'Story unsaved successfully',
+  });
+};
