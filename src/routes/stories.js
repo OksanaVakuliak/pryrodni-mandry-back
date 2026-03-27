@@ -5,4 +5,6 @@ import { getAllStoriesSchema } from '../validations/storyValidation.js';
 
 const storiesRouter = Router();
 
-storiesRouter.get('/stories', celebrate(getAllStoriesSchema), getAllStories);
+storiesRouter.get('/', celebrate(getAllStoriesSchema), getAllStories);
+
+export default storiesRouter;
