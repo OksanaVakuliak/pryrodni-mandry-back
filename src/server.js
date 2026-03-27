@@ -7,6 +7,7 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { logger } from './middleware/logger.js';
 import { connectMongoDB } from './db/connectMongoDB.js';
 import travellersRouter from './routes/travellers.js';
+import categoriesRoutes from './routes/categories.js';
 
 const PORT = Number(process.env.PORT) || 4000;
 
@@ -29,7 +30,8 @@ app.get('/', (req, res) => {
   });
 });
 
-app.use('/travellers', travellersRouter);
+app.use(travellersRouter);
+app.use(categoriesRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
