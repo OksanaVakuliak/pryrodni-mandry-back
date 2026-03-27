@@ -23,8 +23,11 @@ export const saveFileToCloudinary = (
         unique_filename: false,
       },
       (error, result) => {
-        if (error) return reject(error);
-        resolve(result.secure_url);
+        if (error) {
+          return reject(error);
+        }
+
+        return resolve(result.secure_url);
       },
     );
 
