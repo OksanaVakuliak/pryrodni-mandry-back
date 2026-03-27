@@ -3,9 +3,8 @@ import Story from '../models/story.js';
 import createHttpError from 'http-errors';
 
 const getAllStories = async (req, res) => {
-  const page = Math.max(1, parseInt(req.query.page) || 1);
-  const limit = Math.max(1, parseInt(req.query.limit) || 6);
-  const { category } = req.query;
+  const { page = 1, perPage = 6, category } = req.query;
+  const skip = (page - 1) * perPage;
 
   const filter = {};
   if (category) {
@@ -16,26 +15,27 @@ const getAllStories = async (req, res) => {
     filter.category = new mongoose.Types.ObjectId(category);
   }
 
-  const [stories, totalItems] = await Promise.all([
+  const [stories, totalStories] = await Promise.all([
     Story.find(filter)
       .sort({ rate: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
+      .skip(skip)
+      .limit(perPage)
       .populate('ownerId', 'name avatar')
       .populate('category', 'name'),
 
     Story.countDocuments(filter),
   ]);
 
-  const totalPages = Math.ceil(totalItems / limit);
+  const totalPages = Math.ceil(totalStories / perPage);
   const hasNextPage = page < totalPages;
 
   res.status(200).json({
-    currentPage: page,
+    page,
+    perPage,
     totalPages,
-    totalItems,
+    totalStories,
     hasNextPage,
-    data: stories,
+    stories,
   });
 };
 
