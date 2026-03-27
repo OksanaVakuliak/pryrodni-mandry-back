@@ -1,4 +1,5 @@
 import { v2 as cloudinary } from 'cloudinary';
+import { Readable } from 'stream';
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -7,18 +8,26 @@ cloudinary.config({
   secure: true,
 });
 
-export const saveFileToCloudinary = async (
-  filePath,
+export const saveFileToCloudinary = (
+  file,
   folder = 'general',
   publicId = 'file',
 ) => {
-  const result = await cloudinary.uploader.upload(filePath, {
-    folder: `pryrodni-mandry/${folder}`,
-    resource_type: 'image',
-    public_id: publicId,
-    overwrite: true,
-    unique_filename: false,
-  });
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: `pryrodni-mandry/${folder}`,
+        resource_type: 'image',
+        public_id: publicId,
+        overwrite: true,
+        unique_filename: false,
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result.secure_url);
+      },
+    );
 
-  return result.secure_url;
+    Readable.from(file.buffer).pipe(uploadStream);
+  });
 };
