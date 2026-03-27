@@ -33,7 +33,7 @@ app.get('/', (req, res) => {
     message: 'Welcome to Pryrodni Mandry API',
   });
 });
-app.use('/stories', storiesRouter);
+app.use(storiesRouter);
 
 app.use(authRoutes);
 app.use(travellersRouter);
