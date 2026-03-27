@@ -22,7 +22,7 @@
 
 - **httpOnly Cookies** — безпечне зберігання сесії, захищене від XSS атак.
 
-- **[bcryptjs](https://www.npmjs.com/package/bcryptjs)** — надійне хешування паролів користувачів.
+- **[bcrypt](https://www.npmjs.com/package/bcrypt)** — надійне хешування паролів користувачів.
 
 - **[CORS](https://www.npmjs.com/package/cors)** — налаштування дозволених джерел запитів (порт 3000).
 
