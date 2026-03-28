@@ -1,6 +1,8 @@
 import createHttpError from 'http-errors';
 import User from '../models/user.js';
 import Story from '../models/story.js';
+import bcrypt from 'bcrypt';
+import { saveFileToCloudinary } from '../utils/saveFileToCloudinary.js';
 
 export const getMyProfile = async (req, res) => {
   const userId = req.user?._id;
@@ -81,4 +83,30 @@ export const getSavedStories = async (req, res) => {
     hasNextPage,
     stories,
   });
+};
+
+export const updateProfile = async (req, res, next) => {
+  const updates = {};
+
+  if (req.body.name) {
+    updates.name = req.body.name;
+  }
+
+  if (req.body.password) {
+    const hashedPassword = await bcrypt.hash(req.body.password, 10);
+    updates.password = hashedPassword;
+  }
+
+  if (req.file) {
+    const avatarUrl = await saveFileToCloudinary(req.file);
+    updates.avatar = avatarUrl;
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    updates,
+    { returnDocument: 'after' }
+  ).select('-password');
+
+  return res.status(200).json(user);
 };
