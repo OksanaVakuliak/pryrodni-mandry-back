@@ -13,6 +13,7 @@ import profileRoutes from './routes/profile.js';
 import './models/story.js';
 import './models/user.js';
 import authRoutes from './routes/auth.js';
+import { errors } from 'celebrate';
 
 const PORT = Number(process.env.PORT) || 4000;
 
@@ -35,12 +36,12 @@ app.get('/', (req, res) => {
   });
 });
 app.use(storiesRouter);
-
 app.use(authRoutes);
 app.use(profileRoutes);
 app.use(travellersRouter);
 app.use(categoriesRoutes);
 
+app.use(errors());
 app.use(notFoundHandler);
 app.use(errorHandler);
 
