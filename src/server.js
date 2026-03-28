@@ -9,6 +9,7 @@ import { connectMongoDB } from './db/connectMongoDB.js';
 import travellersRouter from './routes/travellers.js';
 import categoriesRoutes from './routes/categories.js';
 import storiesRouter from './routes/stories.js';
+import profileRoutes from './routes/profile.js';
 import './models/story.js';
 import './models/user.js';
 import authRoutes from './routes/auth.js';
@@ -36,6 +37,7 @@ app.get('/', (req, res) => {
 app.use(storiesRouter);
 
 app.use(authRoutes);
+app.use(profileRoutes);
 app.use(travellersRouter);
 app.use(categoriesRoutes);
 
