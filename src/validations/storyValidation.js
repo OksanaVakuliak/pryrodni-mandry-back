@@ -18,3 +18,9 @@ export const patchSaveStorySchema = {
     id: Joi.string().custom(objectIdValidator).required(),
   }),
 };
+export const getSavedStoriesSchema = {
+  [Segments.QUERY]: Joi.object({
+    page: Joi.number().integer().min(1).default(1),
+    perPage: Joi.number().integer().min(1).max(100).default(6),
+  }),
+};
