@@ -180,3 +180,11 @@ npm run start
 | `npm run check-format` | Перевіряє, чи відповідає код правилам форматування (без внесення змін).             |
 | `npm run lint`         | Запускає перевірку коду лінтером ESLint на наявність помилок.                       |
 | `npm run lint:fix`     | Автоматично виправляє прості зауваження лінтера.                                    |
+
+---
+
+## 📘 API documentation
+
+OpenAPI (Swagger) specification is available at: [docs/openapi.yaml](docs/openapi.yaml)
+
+You can preview it locally using Swagger UI or the online Swagger Editor (https://editor.swagger.io/) by uploading `docs/openapi.yaml`.

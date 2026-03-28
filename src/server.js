@@ -2,18 +2,19 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import { errors } from 'celebrate';
 import { notFoundHandler } from './middleware/notFoundHandler.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { logger } from './middleware/logger.js';
+
 import { connectMongoDB } from './db/connectMongoDB.js';
+
 import travellersRouter from './routes/travellers.js';
 import categoriesRoutes from './routes/categories.js';
 import storiesRouter from './routes/stories.js';
 import profileRoutes from './routes/profile.js';
-import './models/story.js';
-import './models/user.js';
 import authRoutes from './routes/auth.js';
-import { errors } from 'celebrate';
+import docsRouter from './routes/docs.js';
 
 const PORT = Number(process.env.PORT) || 4000;
 
@@ -29,17 +30,14 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
-// Routes
-app.get('/', (req, res) => {
-  res.json({
-    message: 'Welcome to Pryrodni Mandry API',
-  });
-});
 app.use(storiesRouter);
 app.use(authRoutes);
 app.use(profileRoutes);
 app.use(travellersRouter);
 app.use(categoriesRoutes);
+
+// Docs routes (Swagger UI and raw spec)
+app.use(docsRouter);
 
 app.use(errors());
 app.use(notFoundHandler);
