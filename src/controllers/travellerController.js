@@ -1,4 +1,6 @@
 import User from '../models/user.js';
+import * as travellersService from '../services/travellerService.js';
+import createHttpError from 'http-errors';
 
 export const getTravellers = async (req, res, next) => {
   try {
@@ -9,7 +11,7 @@ export const getTravellers = async (req, res, next) => {
     const travellers = await User.aggregate([
       {
         $lookup: {
-          from: 'articless',
+          from: 'stories',
           localField: '_id',
           foreignField: 'ownerId',
           as: 'userArticles',
@@ -67,4 +69,38 @@ export const getTravellers = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
+};
+
+// otrymaty profil
+export const getTravellerProfile = async (req, res, next) => {
+  const { id } = req.params;
+  const traveller = await travellersService.getTravellerProfile(id);
+  if (!traveller) {
+    return next(createHttpError(404, 'Traveller not found'));
+  }
+
+  res.status(200).json({
+    status: 200,
+    message: 'Successfully found traveller profile!',
+    data: traveller,
+  });
+};
+
+// otrymaty istorii avtora
+export const getTravellerStories = async (req, res, next) => {
+  const { id } = req.params;
+  const page = parseInt(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 6;
+
+  const result = await travellersService.getTravellerStories({
+    ownerId: id,
+    page,
+    limit,
+  });
+
+  res.status(200).json({
+    status: 200,
+    message: 'Successfully found traveller stories!',
+    data: result,
+  });
 };
