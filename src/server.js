@@ -13,7 +13,6 @@ import profileRoutes from './routes/profile.js';
 import './models/story.js';
 import './models/user.js';
 import authRoutes from './routes/auth.js';
-import storiesRouter from './routes/stories.js';
 import { errors } from 'celebrate';
 
 const PORT = Number(process.env.PORT) || 4000;
@@ -36,8 +35,6 @@ app.get('/', (req, res) => {
     message: 'Welcome to Pryrodni Mandry API',
   });
 });
-app.use(storiesRouter);
-
 app.use(storiesRouter);
 app.use(authRoutes);
 app.use(profileRoutes);
