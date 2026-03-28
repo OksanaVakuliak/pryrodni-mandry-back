@@ -24,3 +24,11 @@ export const getSavedStoriesSchema = {
     perPage: Joi.number().integer().min(1).max(100).default(6),
   }),
 };
+
+export const createStorySchema = {
+  [Segments.BODY]: Joi.object({
+    title: Joi.string().trim().min(1).required(),
+    article: Joi.string().min(1).required(),
+    category: Joi.string().hex().length(24).required(),
+  }),
+};
