@@ -4,6 +4,11 @@ import { isValidObjectId } from 'mongoose';
 const objectIdValidator = (value, helpers) => {
   return !isValidObjectId(value) ? helpers.message('Invalid id format') : value;
 };
+export const getStoryByIdSchema = {
+  [Segments.PARAMS]: Joi.object({
+    id: Joi.string().custom(objectIdValidator).required(),
+  }),
+};
 
 export const getAllStoriesSchema = {
   [Segments.QUERY]: Joi.object({
@@ -18,6 +23,7 @@ export const patchSaveStorySchema = {
     id: Joi.string().custom(objectIdValidator).required(),
   }),
 };
+
 export const getSavedStoriesSchema = {
   [Segments.QUERY]: Joi.object({
     page: Joi.number().integer().min(1).default(1),
