@@ -93,7 +93,7 @@ export const getTravellerStories = async (req, res, next) => {
   const limit = Number(req.query.limit) || 6;
 
   const result = await travellersService.getTravellerStories({
-    authorId: id,
+    ownerId: id,
     page,
     limit,
   });

@@ -3,6 +3,10 @@ import { celebrate } from 'celebrate';
 import * as travellersController from '../controllers/travellerController.js';
 import { getTravellersSchema } from '../validations/travellersValidation.js';
 import { isValidId } from '../middleware/isValidId.js';
+import {
+  getTravellerProfile,
+  getTravellerStories,
+} from '../services/travellerService.js';
 
 const router = Router();
 
@@ -12,7 +16,7 @@ router.get(
   travellersController.getTravellers,
 );
 
-router.get('/:id', isValidId, travellersController.getTravellerProfile);
-router.get('/:id/stories', isValidId, travellersController.getTravellerStories);
+router.get('/travellers/:id', isValidId, getTravellerProfile);
+router.get('/travellers/:id/stories', isValidId, getTravellerStories);
 
 export default router;

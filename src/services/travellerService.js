@@ -5,10 +5,10 @@ export const getTravellerProfile = async (userId) => {
   return await User.findById(userId).select('-email');
 };
 
-export const getTravellerStories = async ({ authorId, page, limit }) => {
+export const getTravellerStories = async ({ ownerId, page, limit }) => {
   const skip = (page - 1) * limit;
 
-  const storiesQuery = Story.find({ author: authorId })
+  const storiesQuery = Story.find({ ownerId })
     .skip(skip)
     .limit(limit)
     .sort({ createdAt: -1 })
@@ -16,7 +16,7 @@ export const getTravellerStories = async ({ authorId, page, limit }) => {
 
   const [stories, totalItems] = await Promise.all([
     storiesQuery,
-    Story.countDocuments({ author: authorId }),
+    Story.countDocuments({ownerId }),
   ]);
 
   const totalPages = Math.ceil(totalItems / limit);
