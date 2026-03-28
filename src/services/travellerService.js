@@ -9,14 +9,12 @@ export const getTravellerStories = async ({ ownerId, page, limit }) => {
   const skip = (page - 1) * limit;
 
   const storiesQuery = Story.find({ ownerId })
-    .skip(skip)
-    .limit(limit)
     .sort({ _id: -1 })
     .populate('category', 'name');
 
   const [stories, totalItems] = await Promise.all([
-    storiesQuery,
-    Story.countDocuments({ ownerId }),
+    storiesQuery.clone().skip(skip).limit(limit),
+    storiesQuery.clone().countDocuments(),
   ]);
 
   const totalPages = Math.ceil(totalItems / limit);

@@ -1,10 +1,6 @@
-// src/services/auth.js
-
 import crypto from 'crypto';
 import { Session } from '../models/session.js';
-
-const FIFTEEN_MINUTES = 15 * 60 * 1000;
-const ONE_DAY = 24 * 60 * 60 * 1000;
+import { FIFTEEN_MINUTES, ONE_DAY } from '../constants/time.js';
 
 export const createSession = async (userId) => {
   const accessToken = crypto.randomBytes(30).toString('base64');

@@ -1,6 +1,7 @@
 import createHttpError from 'http-errors';
 import User from '../models/user.js';
 import Story from '../models/story.js';
+import parsePagination from '../utils/pagination.js';
 import bcrypt from 'bcrypt';
 import { saveFileToCloudinary } from '../utils/saveFileToCloudinary.js';
 
@@ -24,19 +25,19 @@ export const getMyStories = async (req, res) => {
     throw createHttpError(401, 'Unauthorized');
   }
 
-  const page = parseInt(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 6;
-  const skip = (page - 1) * limit;
+  const {
+    page,
+    perPage: limit,
+    skip,
+  } = parsePagination(req.query, { page: 1, perPage: 6 });
 
-  const storiesQuery = Story.find({ ownerId: userId })
-    .skip(skip)
-    .limit(limit)
+  const baseQuery = Story.find({ ownerId: userId })
     .sort({ _id: -1 })
     .populate('category', 'name');
 
   const [stories, totalItems] = await Promise.all([
-    storiesQuery,
-    Story.countDocuments({ ownerId: userId }),
+    baseQuery.clone().skip(skip).limit(limit),
+    baseQuery.clone().countDocuments(),
   ]);
 
   const totalPages = Math.ceil(totalItems / limit);
@@ -55,34 +56,30 @@ export const getMyStories = async (req, res) => {
 };
 
 export const getSavedStories = async (req, res) => {
-  const { page = 1, perPage = 6 } = req.query;
-  const skip = (page - 1) * perPage;
+  const { page, perPage, skip } = parsePagination(req.query, {
+    page: 1,
+    perPage: 6,
+  });
   const userId = req.user._id;
 
   const filter = { savedByUsers: userId };
 
-  const [stories, totalStories] = await Promise.all([
-    Story.find(filter)
-      .sort({ rate: -1 })
-      .skip(skip)
-      .limit(perPage)
-      .populate('ownerId', 'name avatar')
-      .populate('category', 'name'),
+  const baseQuery = Story.find(filter)
+    .sort({ rate: -1 })
+    .populate('ownerId', 'name avatar')
+    .populate('category', 'name');
 
-    Story.countDocuments(filter),
+  const [stories, totalStories] = await Promise.all([
+    baseQuery.clone().skip(skip).limit(perPage),
+    baseQuery.clone().countDocuments(),
   ]);
 
   const totalPages = Math.ceil(totalStories / perPage);
   const hasNextPage = page < totalPages;
 
-  res.status(200).json({
-    page,
-    perPage,
-    totalPages,
-    totalStories,
-    hasNextPage,
-    stories,
-  });
+  res
+    .status(200)
+    .json({ page, perPage, totalPages, totalStories, hasNextPage, stories });
 };
 
 export const updateProfile = async (req, res, next) => {
