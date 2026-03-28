@@ -5,7 +5,7 @@ export const getStoryById = async (req, res) => {
   const { id } = req.params;
 
   const story = await Story.findById(id)
-    .populate('ownerId', 'name avatar')
+    .populate('author', 'name avatar')
     .populate('category', 'name');
 
   if (!story) {

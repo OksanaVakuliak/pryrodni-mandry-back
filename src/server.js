@@ -10,6 +10,7 @@ import travellersRouter from './routes/travellers.js';
 import categoriesRoutes from './routes/categories.js';
 import authRoutes from './routes/auth.js';
 import storiesRouter from './routes/stories.js';
+import { errors } from 'celebrate';
 
 const PORT = Number(process.env.PORT) || 4000;
 
@@ -37,6 +38,7 @@ app.use(authRoutes);
 app.use(travellersRouter);
 app.use(categoriesRoutes);
 
+app.use(errors());
 app.use(notFoundHandler);
 app.use(errorHandler);
 
