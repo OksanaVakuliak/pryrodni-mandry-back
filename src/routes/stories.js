@@ -1,13 +1,46 @@
 import { celebrate } from 'celebrate';
 import { Router } from 'express';
-import { createStory } from '../controllers/storyController.js';
-import { createStorySchema } from '../validations/storyValidation.js';
-import { authenticate } from '../middleware/authenticate.js';
+
 import { upload } from '../middleware/multer.js';
+import { authenticate } from '../middleware/authenticate.js';
 
-const router = Router();
+import {
+  getAllStories,
+  getPopularStories,
+  getRecommendedStories,
+  postSaveStory,
+  deleteSaveStory,
+  createStory,
+} from '../controllers/storyController.js';
+import {
+  getAllStoriesSchema,
+  createStorySchema,
+  patchSaveStorySchema,
+} from '../validations/storyValidation.js';
 
-router.post(
+const storiesRouter = Router();
+
+storiesRouter.get('/stories', celebrate(getAllStoriesSchema), getAllStories);
+
+storiesRouter.get('/stories/popular', getPopularStories);
+
+storiesRouter.get('/stories/:id/recommended', getRecommendedStories);
+
+storiesRouter.patch(
+  '/stories/:id/save',
+  authenticate,
+  celebrate(patchSaveStorySchema),
+  postSaveStory,
+);
+
+storiesRouter.patch(
+  '/stories/:id/delete',
+  authenticate,
+  celebrate(patchSaveStorySchema),
+  deleteSaveStory,
+);
+
+storiesRouter.post(
   '/stories',
   authenticate,
   upload.single('image'),
@@ -15,4 +48,4 @@ router.post(
   createStory,
 );
 
-export default router;
+export default storiesRouter;

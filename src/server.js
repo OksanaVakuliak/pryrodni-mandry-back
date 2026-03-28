@@ -8,6 +8,9 @@ import { logger } from './middleware/logger.js';
 import { connectMongoDB } from './db/connectMongoDB.js';
 import travellersRouter from './routes/travellers.js';
 import categoriesRoutes from './routes/categories.js';
+import storiesRouter from './routes/stories.js';
+import './models/story.js';
+import './models/user.js';
 import authRoutes from './routes/auth.js';
 import storiesRoutes from './routes/stories.js';
 import { errors } from 'celebrate';
@@ -32,6 +35,7 @@ app.get('/', (req, res) => {
     message: 'Welcome to Pryrodni Mandry API',
   });
 });
+app.use(storiesRouter);
 
 app.use(authRoutes);
 app.use(travellersRouter);
