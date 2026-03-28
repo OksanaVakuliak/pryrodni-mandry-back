@@ -9,6 +9,7 @@ import { connectMongoDB } from './db/connectMongoDB.js';
 import travellersRouter from './routes/travellers.js';
 import categoriesRoutes from './routes/categories.js';
 import authRoutes from './routes/auth.js';
+import storiesRouter from './routes/stories.js';
 
 const PORT = Number(process.env.PORT) || 4000;
 
@@ -31,6 +32,7 @@ app.get('/', (req, res) => {
   });
 });
 
+app.use(storiesRouter);
 app.use(authRoutes);
 app.use(travellersRouter);
 app.use(categoriesRoutes);
