@@ -27,6 +27,7 @@ router.patch(
   authenticate,
   upload.single('avatar'),
   celebrate(updateProfileSchema),
-  updateProfile);
+  updateProfile,
+);
 
 export default router;
