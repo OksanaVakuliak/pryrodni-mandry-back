@@ -21,7 +21,7 @@ export const getStoryById = async (req, res) => {
     .populate('category', 'name');
 
   if (!story) {
-    throw createHttpError(404, 'Така історія відсутня');
+    throw createHttpError(404, 'Story not found');
   }
 
   res.status(200).json({
@@ -43,15 +43,14 @@ export const getAllStories = async (req, res) => {
     filter.category = new mongoose.Types.ObjectId(category);
   }
 
-  const [stories, totalStories] = await Promise.all([
-    Story.find(filter)
-      .sort({ rate: -1 })
-      .skip(skip)
-      .limit(perPage)
-      .populate('ownerId', 'name avatar')
-      .populate('category', 'name'),
+  const baseQuery = Story.find(filter)
+    .sort({ rate: -1 })
+    .populate('ownerId', 'name avatar')
+    .populate('category', 'name');
 
-    Story.countDocuments(filter),
+  const [stories, totalStories] = await Promise.all([
+    baseQuery.clone().skip(skip).limit(perPage),
+    baseQuery.clone().countDocuments(),
   ]);
 
   const totalPages = Math.ceil(totalStories / perPage);
