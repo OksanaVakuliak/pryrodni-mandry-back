@@ -21,6 +21,8 @@ const userSchema = new Schema(
     avatar: {
       type: String,
       required: false,
+      default:
+        'https://res.cloudinary.com/dpmlsqm9h/image/upload/v1774736356/Gemini_Generated_Image_q5yos3q5yos3q5yo_fvhutp.png',
     },
   },
   {

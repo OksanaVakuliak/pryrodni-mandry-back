@@ -98,15 +98,13 @@ export const updateProfile = async (req, res, next) => {
   }
 
   if (req.file) {
-    const avatarUrl = await saveFileToCloudinary(req.file);
+    const avatarUrl = await saveFileToCloudinary(req.file, 'avatars');
     updates.avatar = avatarUrl;
   }
 
-  const user = await User.findByIdAndUpdate(
-    req.user._id,
-    updates,
-    { returnDocument: 'after' }
-  ).select('-password');
+  const user = await User.findByIdAndUpdate(req.user._id, updates, {
+    returnDocument: 'after',
+  }).select('-password');
 
   return res.status(200).json(user);
 };
