@@ -51,3 +51,34 @@ export const getMyStories = async (req, res) => {
     },
   });
 };
+
+export const getSavedStories = async (req, res) => {
+  const { page = 1, perPage = 6 } = req.query;
+  const skip = (page - 1) * perPage;
+  const userId = req.user._id;
+
+  const filter = { savedByUsers: userId };
+
+  const [stories, totalStories] = await Promise.all([
+    Story.find(filter)
+      .sort({ rate: -1 })
+      .skip(skip)
+      .limit(perPage)
+      .populate('ownerId', 'name avatar')
+      .populate('category', 'name'),
+
+    Story.countDocuments(filter),
+  ]);
+
+  const totalPages = Math.ceil(totalStories / perPage);
+  const hasNextPage = page < totalPages;
+
+  res.status(200).json({
+    page,
+    perPage,
+    totalPages,
+    totalStories,
+    hasNextPage,
+    stories,
+  });
+};
