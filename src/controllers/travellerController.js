@@ -11,7 +11,7 @@ export const getTravellers = async (req, res, next) => {
     const travellers = await User.aggregate([
       {
         $lookup: {
-          from: 'articless',
+          from: 'stories',
           localField: '_id',
           foreignField: 'ownerId',
           as: 'userArticles',
