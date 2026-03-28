@@ -71,7 +71,6 @@ export const getTravellers = async (req, res, next) => {
   }
 };
 
-// otrymaty profil
 export const getTravellerProfile = async (req, res, next) => {
   const { id } = req.params;
   const traveller = await travellersService.getTravellerProfile(id);
@@ -86,7 +85,6 @@ export const getTravellerProfile = async (req, res, next) => {
   });
 };
 
-// otrymaty istorii avtora
 export const getTravellerStories = async (req, res, next) => {
   const { id } = req.params;
   const page = parseInt(req.query.page) || 1;

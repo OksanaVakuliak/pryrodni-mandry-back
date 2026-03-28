@@ -4,7 +4,10 @@ import { saveFileToCloudinary } from '../utils/saveFileToCloudinary.js';
 import Story from '../models/story.js';
 import getUploadedFile from '../utils/fileUpload.js';
 import parsePagination from '../utils/pagination.js';
-import { saveStoryForUser, unsaveStoryForUser } from '../services/storyService.js';
+import {
+  saveStoryForUser,
+  unsaveStoryForUser,
+} from '../services/storyService.js';
 
 export const getStoryById = async (req, res) => {
   const { id } = req.params;
@@ -54,7 +57,9 @@ export const getAllStories = async (req, res) => {
   const totalPages = Math.ceil(totalStories / perPage);
   const hasNextPage = page < totalPages;
 
-  res.status(200).json({ page, perPage, totalPages, totalStories, hasNextPage, stories });
+  res
+    .status(200)
+    .json({ page, perPage, totalPages, totalStories, hasNextPage, stories });
 };
 
 export const getPopularStories = async (req, res) => {

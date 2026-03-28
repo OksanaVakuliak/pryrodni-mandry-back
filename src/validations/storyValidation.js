@@ -1,12 +1,9 @@
 import { Joi, Segments } from 'celebrate';
-import { isValidObjectId } from 'mongoose';
+import { isValidJoi } from '../middleware/isValidId.js';
 
-const objectIdValidator = (value, helpers) => {
-  return !isValidObjectId(value) ? helpers.message('Invalid id format') : value;
-};
 export const getStoryByIdSchema = {
   [Segments.PARAMS]: Joi.object({
-    id: Joi.string().custom(objectIdValidator).required(),
+    id: Joi.string().custom(isValidJoi).required(),
   }),
 };
 
@@ -20,7 +17,7 @@ export const getAllStoriesSchema = {
 
 export const patchSaveStorySchema = {
   [Segments.PARAMS]: Joi.object({
-    id: Joi.string().custom(objectIdValidator).required(),
+    id: Joi.string().custom(isValidJoi).required(),
   }),
 };
 
