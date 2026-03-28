@@ -2,6 +2,9 @@ import mongoose from 'mongoose';
 import createHttpError from 'http-errors';
 import { saveFileToCloudinary } from '../utils/saveFileToCloudinary.js';
 import Story from '../models/story.js';
+import getUploadedFile from '../utils/fileUpload.js';
+import parsePagination from '../utils/pagination.js';
+import { saveStoryForUser, unsaveStoryForUser } from '../services/storyService.js';
 
 export const getStoryById = async (req, res) => {
   const { id } = req.params;
@@ -25,10 +28,10 @@ export const getStoryById = async (req, res) => {
 };
 
 export const getAllStories = async (req, res) => {
-  const { page = 1, perPage = 6, category } = req.query;
-  const skip = (page - 1) * perPage;
+  const { page, perPage, skip } = parsePagination(req.query);
 
   const filter = {};
+  const category = req.query.category;
   if (category) {
     if (!mongoose.Types.ObjectId.isValid(category)) {
       throw createHttpError(400, 'Category query parameter is required');
@@ -51,14 +54,7 @@ export const getAllStories = async (req, res) => {
   const totalPages = Math.ceil(totalStories / perPage);
   const hasNextPage = page < totalPages;
 
-  res.status(200).json({
-    page,
-    perPage,
-    totalPages,
-    totalStories,
-    hasNextPage,
-    stories,
-  });
+  res.status(200).json({ page, perPage, totalPages, totalStories, hasNextPage, stories });
 };
 
 export const getPopularStories = async (req, res) => {
@@ -99,31 +95,11 @@ export const getRecommendedStories = async (req, res) => {
 export const postSaveStory = async (req, res) => {
   const { id } = req.params;
   const userId = req.user._id;
-
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw createHttpError(400, 'Invalid story ID');
   }
 
-  const story = await Story.findById(id);
-  if (!story) {
-    throw createHttpError(404, 'Story not found');
-  }
-
-  const alreadySaved = story.savedByUsers.some((uid) => uid.equals(userId));
-
-  let finalStory;
-  if (!alreadySaved) {
-    finalStory = await Story.findByIdAndUpdate(
-      id,
-      {
-        $addToSet: { savedByUsers: userId },
-        $inc: { rate: 1 },
-      },
-      { returnDocument: 'after' },
-    );
-  } else {
-    finalStory = story;
-  }
+  const finalStory = await saveStoryForUser(id, userId);
 
   res.status(200).json({
     isSaved: true,
@@ -135,31 +111,11 @@ export const postSaveStory = async (req, res) => {
 export const deleteSaveStory = async (req, res) => {
   const { id } = req.params;
   const userId = req.user._id;
-
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw createHttpError(400, 'Invalid story ID');
   }
 
-  const story = await Story.findById(id);
-  if (!story) {
-    throw createHttpError(404, 'Story not found');
-  }
-
-  const isSaved = story.savedByUsers.some((uid) => uid.equals(userId));
-
-  let finalStory;
-  if (isSaved) {
-    finalStory = await Story.findByIdAndUpdate(
-      id,
-      {
-        $pull: { savedByUsers: userId },
-        $inc: { rate: -1 },
-      },
-      { returnDocument: 'after' },
-    );
-  } else {
-    finalStory = story;
-  }
+  const finalStory = await unsaveStoryForUser(id, userId);
 
   res.status(200).json({
     isSaved: false,
@@ -170,27 +126,46 @@ export const deleteSaveStory = async (req, res) => {
 
 export const createStory = async (req, res, next) => {
   try {
-    if (!req.file) {
-      throw createHttpError(400, 'No file');
+    const { title, article, category } = req.body;
+
+    if (!title || !article || !category) {
+      throw createHttpError(400, 'Missing required fields');
     }
 
-    const buffer = Buffer.isBuffer(req.file.buffer)
-      ? req.file.buffer
-      : Buffer.from(req.file.buffer);
+    if (!mongoose.Types.ObjectId.isValid(category)) {
+      throw createHttpError(400, 'Invalid category id');
+    }
 
-    const result = await saveFileToCloudinary({ buffer }, req.user._id);
+    const uploadedFile = getUploadedFile(req);
+    if (!uploadedFile || !uploadedFile.buffer) {
+      throw createHttpError(400, 'No image file provided');
+    }
+
+    const buffer = Buffer.isBuffer(uploadedFile.buffer)
+      ? uploadedFile.buffer
+      : Buffer.from(uploadedFile.buffer);
+
+    const publicId = `story_${req.user._id}_${Date.now()}`;
+    const result = await saveFileToCloudinary({ buffer }, 'stories', publicId);
 
     if (!result) {
       throw createHttpError(500, 'Image upload failed');
     }
 
     const story = await Story.create({
-      ...req.body,
+      title: title.trim(),
+      article,
       img: result,
-      ownerId: req.user._id,
+      category: new mongoose.Types.ObjectId(category),
+      ownerId: new mongoose.Types.ObjectId(req.user._id),
+      date: new Date().toISOString(),
     });
 
-    res.status(201).json(story);
+    const populated = await Story.findById(story._id)
+      .populate('ownerId', 'name avatar')
+      .populate('category', 'name');
+
+    res.status(201).json(populated);
   } catch (error) {
     next(error);
   }

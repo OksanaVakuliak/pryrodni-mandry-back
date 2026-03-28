@@ -1,6 +1,7 @@
 import createHttpError from 'http-errors';
 import User from '../models/user.js';
 import Story from '../models/story.js';
+import parsePagination from '../utils/pagination.js';
 
 export const getMyProfile = async (req, res) => {
   const userId = req.user?._id;
@@ -22,9 +23,7 @@ export const getMyStories = async (req, res) => {
     throw createHttpError(401, 'Unauthorized');
   }
 
-  const page = parseInt(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 6;
-  const skip = (page - 1) * limit;
+  const { page, perPage: limit, skip } = parsePagination(req.query, { page: 1, perPage: 6 });
 
   const storiesQuery = Story.find({ ownerId: userId })
     .skip(skip)
@@ -53,8 +52,7 @@ export const getMyStories = async (req, res) => {
 };
 
 export const getSavedStories = async (req, res) => {
-  const { page = 1, perPage = 6 } = req.query;
-  const skip = (page - 1) * perPage;
+  const { page, perPage, skip } = parsePagination(req.query, { page: 1, perPage: 6 });
   const userId = req.user._id;
 
   const filter = { savedByUsers: userId };
@@ -73,12 +71,5 @@ export const getSavedStories = async (req, res) => {
   const totalPages = Math.ceil(totalStories / perPage);
   const hasNextPage = page < totalPages;
 
-  res.status(200).json({
-    page,
-    perPage,
-    totalPages,
-    totalStories,
-    hasNextPage,
-    stories,
-  });
+  res.status(200).json({ page, perPage, totalPages, totalStories, hasNextPage, stories });
 };
