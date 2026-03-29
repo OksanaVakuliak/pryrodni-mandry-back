@@ -5,6 +5,10 @@ import { createCategorySchema } from '../validations/categoryValidation.js';
 
 const router = express.Router();
 
-router.get('/categories', celebrate(createCategorySchema), getAllCategories);
+router.get(
+  '/api/categories',
+  celebrate(createCategorySchema),
+  getAllCategories,
+);
 
 export default router;

@@ -13,17 +13,17 @@ import { upload } from '../middleware/multer.js';
 
 const router = Router();
 
-router.get('/profile/me', authenticate, getMyProfile);
-router.get('/profile/my-stories', authenticate, getMyStories);
+router.get('/api/profile/me', authenticate, getMyProfile);
+router.get('/api/profile/my-stories', authenticate, getMyStories);
 router.get(
-  '/profile/saved-stories',
+  '/api/profile/saved-stories',
   authenticate,
   celebrate(getSavedStoriesSchema),
   getSavedStories,
 );
 
 router.patch(
-  '/profile/edit',
+  '/api/profile/edit',
   authenticate,
   upload.single('avatar'),
   celebrate(updateProfileSchema),

@@ -10,9 +10,9 @@ import {
 
 const router = Router();
 
-router.get('/travellers', celebrate(getTravellersSchema), getTravellers);
+router.get('/api/travellers', celebrate(getTravellersSchema), getTravellers);
 
-router.get('/travellers/:id', isValidId, getTravellerProfile);
-router.get('/travellers/:id/stories', isValidId, getTravellerStories);
+router.get('/api/travellers/:id', isValidId, getTravellerProfile);
+router.get('/api/travellers/:id/stories', isValidId, getTravellerStories);
 
 export default router;
