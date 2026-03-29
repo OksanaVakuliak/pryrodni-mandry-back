@@ -20,30 +20,38 @@ import { upload } from '../middleware/multer.js';
 
 const storiesRouter = Router();
 
-storiesRouter.get('/stories', celebrate(getAllStoriesSchema), getAllStories);
+storiesRouter.get(
+  '/api/stories',
+  celebrate(getAllStoriesSchema),
+  getAllStories,
+);
 
-storiesRouter.get('/stories/popular', getPopularStories);
+storiesRouter.get('/api/stories/popular', getPopularStories);
 
-storiesRouter.get('/stories/:id/recommended', getRecommendedStories);
+storiesRouter.get('/api/stories/:id/recommended', getRecommendedStories);
 
-storiesRouter.get('/stories/:id', celebrate(getStoryByIdSchema), getStoryById);
+storiesRouter.get(
+  '/api/stories/:id',
+  celebrate(getStoryByIdSchema),
+  getStoryById,
+);
 
 storiesRouter.patch(
-  '/stories/:id/save',
+  '/api/stories/:id/save',
   authenticate,
   celebrate(patchSaveStorySchema),
   postSaveStory,
 );
 
 storiesRouter.patch(
-  '/stories/:id/delete',
+  '/api/stories/:id/delete',
   authenticate,
   celebrate(patchSaveStorySchema),
   deleteSaveStory,
 );
 
 storiesRouter.post(
-  '/stories',
+  '/api/stories',
   authenticate,
   upload.single('img'),
   celebrate(createStorySchema),

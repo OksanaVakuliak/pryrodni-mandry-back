@@ -5,6 +5,7 @@ info:
   description: REST API for Pryrodni Mandry backend
 servers:
   - url: http://localhost:4000
+  - url: https://pryrodni-mandry-back.onrender.com/
 
 components:
   securitySchemes:
@@ -169,7 +170,7 @@ components:
       required: [email, password]
 
 paths:
-  /auth/register:
+  /api/auth/register:
     post:
       summary: Register a new user
       requestBody:
@@ -195,7 +196,7 @@ paths:
         '409':
           $ref: '#/components/responses/Conflict'
 
-  /auth/login:
+  /api/auth/login:
     post:
       summary: Login user
       requestBody:
@@ -221,21 +222,21 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /auth/logout:
+  /api/auth/logout:
     post:
       summary: Logout (clears cookies)
       responses:
         '204':
           description: Logged out
 
-  /auth/refresh:
+  /api/auth/refresh:
     post:
       summary: Refresh session tokens
       responses:
         '200':
           description: Session refreshed
 
-  /categories:
+  /api/categories:
     get:
       summary: List categories
       responses:
@@ -257,7 +258,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
 
-  /stories:
+  /api/stories:
     get:
       summary: Get all stories (paginated)
       parameters:
@@ -350,14 +351,14 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
 
-  /stories/popular:
+  /api/stories/popular:
     get:
       summary: Get popular stories
       responses:
         '200':
           description: List of popular stories
 
-  /stories/{id}:
+  /api/stories/{id}:
     get:
       summary: Get story by id
       parameters:
@@ -393,7 +394,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /stories/{id}/recommended:
+  /api/stories/{id}/recommended:
     get:
       summary: Get recommended stories for a given story
       parameters:
@@ -406,7 +407,7 @@ paths:
         '200':
           description: List of recommended stories
 
-  /stories/{id}/save:
+  /api/stories/{id}/save:
     patch:
       summary: Save (bookmark) a story for the current user
       security:
@@ -425,7 +426,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /stories/{id}/delete:
+  /api/stories/{id}/delete:
     patch:
       summary: Unsave a story for the current user
       security:
@@ -444,7 +445,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /profile/me:
+  /api/profile/me:
     get:
       summary: Get current user profile
       security:
@@ -459,7 +460,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /profile/my-stories:
+  /api/profile/my-stories:
     get:
       summary: Get stories of current user (paginated)
       security:
@@ -480,10 +481,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedStories'
-          '401':
-            $ref: '#/components/responses/Unauthorized'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
-  /profile/saved-stories:
+  /api/profile/saved-stories:
     get:
       summary: Get saved stories for current user
       security:
@@ -500,10 +501,10 @@ paths:
       responses:
         '200':
           description: Paginated saved stories
-          '401':
-            $ref: '#/components/responses/Unauthorized'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
-  /profile/edit:
+  /api/profile/edit:
     patch:
       summary: Update current user profile (multipart)
       security:
@@ -540,7 +541,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /travellers:
+  /api/travellers:
     get:
       summary: List travellers (paginated)
       parameters:
@@ -558,7 +559,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
 
-  /travellers/{id}:
+  /api/travellers/{id}:
     get:
       summary: Get traveller profile by id
       parameters:
@@ -575,7 +576,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /travellers/{id}/stories:
+  /api/travellers/{id}/stories:
     get:
       summary: Get stories for a traveller
       parameters:
