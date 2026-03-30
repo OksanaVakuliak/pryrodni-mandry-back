@@ -1,14 +1,8 @@
 import express from 'express';
-import { celebrate } from 'celebrate';
 import { getAllCategories } from '../controllers/categoryController.js';
-import { createCategorySchema } from '../validations/categoryValidation.js';
 
 const router = express.Router();
 
-router.get(
-  '/api/categories',
-  celebrate(createCategorySchema),
-  getAllCategories,
-);
+router.get('/api/categories', getAllCategories);
 
 export default router;

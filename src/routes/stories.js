@@ -4,19 +4,21 @@ import {
   getAllStories,
   getPopularStories,
   getRecommendedStories,
-  postSaveStory,
-  deleteSaveStory,
   createStory,
   getStoryById,
+  patchUnsaveStory,
+  patchSaveStory,
 } from '../controllers/storyController.js';
 import {
   createStorySchema,
   getAllStoriesSchema,
-  patchSaveStorySchema,
-  getStoryByIdSchema,
 } from '../validations/storyValidation.js';
 import { authenticate } from '../middleware/authenticate.js';
 import { upload } from '../middleware/multer.js';
+import {
+  paginationQuerySchema,
+  validIdSchema,
+} from '../validations/commonValidation.js';
 
 const storiesRouter = Router();
 
@@ -26,28 +28,32 @@ storiesRouter.get(
   getAllStories,
 );
 
-storiesRouter.get('/api/stories/popular', getPopularStories);
-
-storiesRouter.get('/api/stories/:id/recommended', getRecommendedStories);
+storiesRouter.get(
+  '/api/stories/popular',
+  celebrate(paginationQuerySchema),
+  getPopularStories,
+);
 
 storiesRouter.get(
-  '/api/stories/:id',
-  celebrate(getStoryByIdSchema),
-  getStoryById,
+  '/api/stories/:id/recommended',
+  celebrate(validIdSchema),
+  getRecommendedStories,
 );
+
+storiesRouter.get('/api/stories/:id', celebrate(validIdSchema), getStoryById);
 
 storiesRouter.patch(
   '/api/stories/:id/save',
   authenticate,
-  celebrate(patchSaveStorySchema),
-  postSaveStory,
+  celebrate(validIdSchema),
+  patchSaveStory,
 );
 
 storiesRouter.patch(
   '/api/stories/:id/delete',
   authenticate,
-  celebrate(patchSaveStorySchema),
-  deleteSaveStory,
+  celebrate(validIdSchema),
+  patchUnsaveStory,
 );
 
 storiesRouter.post(
