@@ -24,7 +24,6 @@ const storiesRouter = Router();
 
 storiesRouter.get(
   '/api/stories',
-  celebrate(paginationQuerySchema),
   celebrate(getAllStoriesSchema),
   getAllStories,
 );

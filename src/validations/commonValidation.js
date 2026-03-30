@@ -1,5 +1,5 @@
 import { Joi, Segments } from 'celebrate';
-import { isValidJoi } from '../middleware/isValidId';
+import { isValidJoi } from '../middleware/isValidId.js';
 
 export const paginationQuerySchema = {
   [Segments.QUERY]: Joi.object({
