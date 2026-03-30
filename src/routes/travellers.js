@@ -1,18 +1,29 @@
 import { Router } from 'express';
 import { celebrate } from 'celebrate';
-import { getTravellersSchema } from '../validations/travellersValidation.js';
-import { isValidId } from '../middleware/isValidId.js';
 import {
   getTravellerProfile,
   getTravellerStories,
   getTravellers,
 } from '../controllers/travellerController.js';
+import {
+  paginationQuerySchema,
+  validIdSchema,
+} from '../validations/commonValidation.js';
 
 const router = Router();
 
-router.get('/travellers', celebrate(getTravellersSchema), getTravellers);
+router.get('/api/travellers', celebrate(paginationQuerySchema), getTravellers);
 
-router.get('/travellers/:id', isValidId, getTravellerProfile);
-router.get('/travellers/:id/stories', isValidId, getTravellerStories);
+router.get(
+  '/api/travellers/:id',
+  celebrate(validIdSchema),
+  getTravellerProfile,
+);
+router.get(
+  '/api/travellers/:id/stories',
+  celebrate(validIdSchema),
+  celebrate(paginationQuerySchema),
+  getTravellerStories,
+);
 
 export default router;

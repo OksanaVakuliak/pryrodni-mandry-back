@@ -2,23 +2,16 @@ import mongoose from 'mongoose';
 import createHttpError from 'http-errors';
 import { saveFileToCloudinary } from '../utils/saveFileToCloudinary.js';
 import Story from '../models/story.js';
+import User from '../models/user.js';
 import getUploadedFile from '../utils/fileUpload.js';
 import parsePagination from '../utils/pagination.js';
-import {
-  saveStoryForUser,
-  unsaveStoryForUser,
-} from '../services/storyService.js';
 
 export const getStoryById = async (req, res) => {
   const { id } = req.params;
 
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    throw createHttpError(400, 'Invalid story ID');
-  }
-
   const story = await Story.findById(id)
-    .populate('ownerId', 'name avatar')
-    .populate('category', 'name');
+    .populate('ownerId', 'name avatarUrl')
+    .populate('category', 'category');
 
   if (!story) {
     throw createHttpError(404, 'Story not found');
@@ -36,17 +29,13 @@ export const getAllStories = async (req, res) => {
   const filter = {};
   const category = req.query.category;
   if (category) {
-    if (!mongoose.Types.ObjectId.isValid(category)) {
-      throw createHttpError(400, 'Category query parameter is required');
-    }
-
     filter.category = new mongoose.Types.ObjectId(category);
   }
 
   const baseQuery = Story.find(filter)
     .sort({ rate: -1 })
-    .populate('ownerId', 'name avatar')
-    .populate('category', 'name');
+    .populate('ownerId', 'name avatarUrl')
+    .populate('category', 'category');
 
   const [stories, totalStories] = await Promise.all([
     baseQuery.clone().skip(skip).limit(perPage),
@@ -67,18 +56,14 @@ export const getPopularStories = async (req, res) => {
   })
     .sort({ rate: -1 })
     .limit(10)
-    .populate('ownerId', 'name avatar')
-    .populate('category', 'name');
+    .populate('ownerId', 'name avatarUrl')
+    .populate('category', 'category');
 
   res.status(200).json(popularStories);
 };
 
 export const getRecommendedStories = async (req, res) => {
   const { id } = req.params;
-
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    throw createHttpError(400, 'Invalid story ID');
-  }
 
   const currentStory = await Story.findById(id);
   if (!currentStory) {
@@ -90,87 +75,116 @@ export const getRecommendedStories = async (req, res) => {
     _id: { $ne: id },
   })
     .limit(3)
-    .populate('ownerId', 'name avatar')
-    .populate('category', 'name');
+    .populate('ownerId', 'name avatarUrl')
+    .populate('category', 'category');
 
   res.status(200).json(stories);
 };
 
-export const postSaveStory = async (req, res) => {
-  const { id } = req.params;
+export const patchSaveStory = async (req, res) => {
+  const { id: storyId } = req.params;
   const userId = req.user._id;
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    throw createHttpError(400, 'Invalid story ID');
+
+  const user = await User.findById(userId);
+  if (user.savedArticles.includes(storyId)) {
+    throw createHttpError(409, 'Story already saved');
   }
 
-  const finalStory = await saveStoryForUser(id, userId);
+  const [updatedStory, updatedUser] = await Promise.all([
+    Story.findByIdAndUpdate(storyId, { $inc: { rate: 1 } }, { new: true }),
+    User.findByIdAndUpdate(
+      userId,
+      { $push: { savedArticles: storyId } },
+      { new: true },
+    ),
+  ]);
+
+  if (!updatedStory) {
+    throw createHttpError(404, 'Story not found');
+  }
 
   res.status(200).json({
-    isSaved: true,
-    savesCount: finalStory.savedByUsers.length,
+    status: 200,
     message: 'Story saved successfully',
+    data: {
+      rate: updatedStory.rate,
+      savedArticles: updatedUser.savedArticles,
+    },
   });
 };
 
-export const deleteSaveStory = async (req, res) => {
-  const { id } = req.params;
+export const patchUnsaveStory = async (req, res) => {
+  const { id: storyId } = req.params;
   const userId = req.user._id;
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    throw createHttpError(400, 'Invalid story ID');
+
+  const [updatedStory, updatedUser] = await Promise.all([
+    Story.findByIdAndUpdate(storyId, { $inc: { rate: -1 } }, { new: true }),
+    User.findByIdAndUpdate(
+      userId,
+      { $pull: { savedArticles: storyId } },
+      { new: true },
+    ),
+  ]);
+
+  if (!updatedStory) {
+    throw createHttpError(404, 'Story not found');
   }
 
-  const finalStory = await unsaveStoryForUser(id, userId);
-
   res.status(200).json({
-    isSaved: false,
-    savesCount: finalStory.savedByUsers.length,
+    status: 200,
     message: 'Story unsaved successfully',
+    data: {
+      rate: updatedStory.rate,
+      savedArticles: updatedUser.savedArticles,
+    },
   });
 };
 
 export const createStory = async (req, res, next) => {
-  try {
-    const { title, article, category } = req.body;
+  const { title, article, category } = req.body;
+  const userId = req.user._id;
 
-    if (!title || !article || !category) {
-      throw createHttpError(400, 'Missing required fields');
-    }
+  if (!title || !article || !category) {
+    throw createHttpError(400, 'Missing required fields');
+  }
 
-    if (!mongoose.Types.ObjectId.isValid(category)) {
-      throw createHttpError(400, 'Invalid category id');
-    }
+  const uploadedFile = getUploadedFile(req);
+  if (!uploadedFile || !uploadedFile.buffer) {
+    throw createHttpError(400, 'No image file provided');
+  }
 
-    const uploadedFile = getUploadedFile(req);
-    if (!uploadedFile || !uploadedFile.buffer) {
-      throw createHttpError(400, 'No image file provided');
-    }
+  if (!req.file) {
+    throw createHttpError(400, 'Field name must be "img" and file is required');
+  }
 
-    const buffer = Buffer.isBuffer(uploadedFile.buffer)
-      ? uploadedFile.buffer
-      : Buffer.from(uploadedFile.buffer);
+  const buffer = Buffer.isBuffer(uploadedFile.buffer)
+    ? uploadedFile.buffer
+    : Buffer.from(uploadedFile.buffer);
 
-    const publicId = `story_${req.user._id}_${Date.now()}`;
-    const result = await saveFileToCloudinary({ buffer }, 'stories', publicId);
+  const publicId = `story_${req.user._id}_${Date.now()}`;
+  const result = await saveFileToCloudinary({ buffer }, 'stories', publicId);
 
-    if (!result) {
-      throw createHttpError(500, 'Image upload failed');
-    }
+  if (!result) {
+    throw createHttpError(500, 'Image upload failed');
+  }
 
-    const story = await Story.create({
+  const [story] = await Promise.all([
+    Story.create({
       title: title.trim(),
       article,
       img: result,
       category: new mongoose.Types.ObjectId(category),
-      ownerId: new mongoose.Types.ObjectId(req.user._id),
+      ownerId: req.user._id,
       date: new Date().toISOString(),
-    });
+    }),
+    User.findByIdAndUpdate(userId, {
+      $inc: { articlesAmount: 1 },
+    }),
+  ]);
 
-    const populated = await Story.findById(story._id)
-      .populate('ownerId', 'name avatar')
-      .populate('category', 'name');
+  const populated = await Story.findById(story._id)
+    .populate('ownerId', 'name avatarUrl')
+    .populate('category', 'category');
 
-    res.status(201).json(populated);
-  } catch (error) {
-    next(error);
-  }
+  res.status(201).json(populated);
 };

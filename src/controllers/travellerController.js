@@ -1,104 +1,80 @@
 import User from '../models/user.js';
-import * as travellersService from '../services/travellerService.js';
+import Story from '../models/story.js';
 import createHttpError from 'http-errors';
+import parsePagination from '../utils/pagination.js';
 
-export const getTravellers = async (req, res, next) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
+export const getTravellers = async (req, res) => {
+  const { page, perPage, skip } = parsePagination(req.query, {
+    page: 1,
+    perPage: 10,
+  });
 
-    const travellers = await User.aggregate([
-      {
-        $lookup: {
-          from: 'stories',
-          localField: '_id',
-          foreignField: 'ownerId',
-          as: 'userArticles',
-        },
-      },
-      {
-        $addFields: {
-          storiesCount: { $size: '$userArticles' },
-        },
-      },
-      {
-        $match: {
-          articlesAmount: { $gt: 0 },
-        },
-      },
-      { $sort: { articlesAmount: -1 } },
-      {
-        $facet: {
-          metadata: [{ $count: 'totalItems' }],
-          data: [
-            { $skip: skip },
-            { $limit: limit },
-            {
-              $project: {
-                password: 0,
-                email: 0,
-                userArticles: 0,
-                updatedAt: 0,
-                createdAt: 0,
-                __v: 0,
-              },
-            },
-          ],
-        },
-      },
-    ]);
+  const queryFilter = { articlesAmount: { $gt: 0 } };
 
-    const result = travellers[0];
-    const items = result?.data || [];
-    const totalItems = result?.metadata[0]?.totalItems || 0;
-    const totalPages = Math.ceil(totalItems / limit);
+  const [users, totalItems] = await Promise.all([
+    User.find(queryFilter)
+      .select('-password -email -updatedAt -createdAt -__v')
+      .sort({ articlesAmount: -1 })
+      .skip(skip)
+      .limit(perPage),
+    User.countDocuments(queryFilter),
+  ]);
 
-    res.status(200).json({
-      status: 200,
-      data: {
-        travellers: items,
-        page,
-        limit,
-        totalItems,
-        totalPages,
-        hasNextPage: page < totalPages,
-        hasPreviousPage: page > 1,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
+  const totalPages = Math.ceil(totalItems / perPage);
+
+  res.status(200).json({
+    data: {
+      users,
+      page,
+      perPage,
+      totalItems,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
+    },
+  });
 };
 
 export const getTravellerProfile = async (req, res, next) => {
   const { id } = req.params;
-  const traveller = await travellersService.getTravellerProfile(id);
+  const traveller = await User.findById(id).select('-email');
   if (!traveller) {
-    return next(createHttpError(404, 'Traveller not found'));
+    throw createHttpError(404, 'Traveller not found');
   }
 
   res.status(200).json({
-    status: 200,
-    message: 'Successfully found traveller profile!',
     data: traveller,
   });
 };
 
 export const getTravellerStories = async (req, res, next) => {
   const { id } = req.params;
-  const page = parseInt(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 6;
-
-  const result = await travellersService.getTravellerStories({
-    ownerId: id,
-    page,
-    limit,
+  const { page, perPage, skip } = parsePagination(req.query, {
+    page: 1,
+    perPage: 6,
   });
 
+  const storiesQuery = Story.find({ ownerId: id })
+    .sort({ _id: -1 })
+    .populate('category', 'category');
+
+  const [stories, totalItems] = await Promise.all([
+    storiesQuery.clone().skip(skip).limit(perPage),
+    storiesQuery.clone().countDocuments(),
+  ]);
+
+  const totalPages = Math.ceil(totalItems / perPage);
+
+  const result = {
+    stories,
+    totalItems,
+    totalPages,
+    currentPage: page,
+    hasNextPage: totalPages > page,
+    hasPreviousPage: page > 1,
+  };
+
   res.status(200).json({
-    status: 200,
-    message: 'Successfully found traveller stories!',
     data: result,
   });
 };

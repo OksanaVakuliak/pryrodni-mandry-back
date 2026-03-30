@@ -2,9 +2,39 @@ openapi: 3.0.3
 info:
   title: Pryrodni Mandry API
   version: 1.0.0
-  description: REST API for Pryrodni Mandry backend
+  description: |
+    REST API для застосунку Природні Мандри.
+
+    ## Автентифікація
+    API використовує cookie-based автентифікацію. При вході або реєстрації сервер встановлює три http-only cookie:
+
+    - `accessToken` — дійсний 15 хвилин
+
+    - `refreshToken` — дійсний 24 години
+
+    - `sessionId` — ідентифікатор сесії
+
+    Для захищених ендпоінтів браузер автоматично надсилає ці cookie.
+
+    Для оновлення сесії використовуйте `POST /api/auth/refresh`.
+
 servers:
   - url: http://localhost:4000
+    description: Локальний сервер розробки
+  - url: https://pryrodni-mandry-back.onrender.com
+    description: Продакшн сервер
+
+tags:
+  - name: Auth
+    description: Реєстрація, вхід, вихід, оновлення сесії
+  - name: Stories
+    description: Операції з подорожніми нотатками
+  - name: Categories
+    description: Категорії нотаток
+  - name: Profile
+    description: Профіль поточного авторизованого користувача
+  - name: Travellers
+    description: Публічні профілі мандрівників
 
 components:
   securitySchemes:
@@ -12,66 +42,94 @@ components:
       type: apiKey
       in: cookie
       name: accessToken
+      description: HTTP-only cookie `accessToken`, який встановлюється після успішного входу або реєстрації.
+
+  parameters:
+    PageParam:
+      in: query
+      name: page
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: Номер сторінки (починаючи з 1)
+    PerPageParam:
+      in: query
+      name: perPage
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 6
+      description: Кількість елементів на сторінці
+    IdParam:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: string
+        pattern: '^[a-fA-F0-9]{24}$'
+      description: MongoDB ObjectId
 
   responses:
     BadRequest:
-      description: Bad request
+      description: Невірний запит — помилки валідації або відсутні обов'язкові поля
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
-          examples:
-            invalidInput:
-              value:
-                status: 400
-                message: 'Invalid request data'
-                details:
-                  field: 'title'
-                  issue: 'required'
+          example:
+            status: 400
+            message: 'Invalid request data'
     Unauthorized:
-      description: Unauthorized
+      description: Не авторизований — відсутній або недійсний токен доступу
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
           examples:
-            noToken:
+            missingToken:
+              summary: Відсутній токен
               value:
                 status: 401
                 message: 'Missing access token'
+            sessionNotFound:
+              summary: Сесію не знайдено
+              value:
+                status: 401
+                message: 'Session not found'
+            tokenExpired:
+              summary: Токен прострочений
+              value:
+                status: 401
+                message: 'Access token expired'
     NotFound:
-      description: Not found
+      description: Ресурс не знайдено
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
-          examples:
-            notFound:
-              value:
-                status: 404
-                message: 'Resource not found'
+          example:
+            status: 404
+            message: 'Story not found'
     Conflict:
-      description: Conflict
+      description: Конфлікт — ресурс вже існує
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
-          examples:
-            alreadyExists:
-              value:
-                status: 409
-                message: 'User with this email already exists'
+          example:
+            status: 409
+            message: 'User with this email already exists'
     InternalError:
-      description: Internal server error
+      description: Внутрішня помилка сервера
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
-          examples:
-            serverError:
-              value:
-                status: 500
-                message: 'Internal server error'
+          example:
+            status: 500
+            message: 'Internal server error'
 
   schemas:
     Error:
@@ -79,84 +137,116 @@ components:
       properties:
         status:
           type: integer
+          example: 400
         message:
           type: string
-        details:
-          type: object
+          example: 'Invalid request data'
       required: [message]
+
     User:
       type: object
+      description: Об'єкт користувача (без поля password)
       properties:
         _id:
           type: string
+          example: '642f9d1a2b3c4d5e6f7a8b9c'
         name:
           type: string
+          example: 'Іван Мандрівник'
         email:
           type: string
-        avatar:
+          format: email
+          example: 'ivan@example.com'
+        avatarUrl:
           type: string
-      required: [_id, name, email]
-
-    Story:
-      type: object
-      properties:
-        _id:
-          type: string
-        title:
-          type: string
-        article:
-          type: string
-        img:
-          type: string
-        category:
-          $ref: '#/components/schemas/Category'
-        ownerId:
-          $ref: '#/components/schemas/User'
-        rate:
+          format: uri
+          example: 'https://res.cloudinary.com/dpmlsqm9h/image/upload/v1774736356/default_avatar.png'
+        articlesAmount:
           type: number
-        date:
+          description: Кількість опублікованих нотаток
+          example: 5
+        savedArticles:
+          type: array
+          description: Масив ID збережених нотаток
+          items:
+            type: string
+          example: ['68498236a100312bea037fe6', '68498236a100312bea023fe6']
+        createdAt:
           type: string
-        savedByUsers:
-          type: array
-          items:
-            $ref: '#/components/schemas/User'
-
-    PaginatedStories:
-      type: object
-      properties:
-        page:
-          type: integer
-        perPage:
-          type: integer
-        totalPages:
-          type: integer
-        totalStories:
-          type: integer
-        hasNextPage:
-          type: boolean
-        stories:
-          type: array
-          items:
-            $ref: '#/components/schemas/Story'
+          format: date-time
+          example: '2026-03-28T21:40:34.169Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2026-03-28T21:40:34.169Z'
+      required: [_id, name, email]
 
     Category:
       type: object
+      description: Категорія нотатки
       properties:
         _id:
           type: string
+          example: '641a1b2c3d4e5f6a7b8c9d0e'
         category:
           type: string
+          example: 'Гори'
       required: [_id, category]
+
+    Story:
+      type: object
+      description: Подорожня нотатка з populated полями category та ownerId
+      properties:
+        _id:
+          type: string
+          example: '643a1b2c3d4e5f6a7b8c9d0e'
+        title:
+          type: string
+          example: 'Похід у Карпати'
+        article:
+          type: string
+          example: 'Повний текст нотатки про подорож...'
+        img:
+          type: string
+          format: uri
+          example: 'https://res.cloudinary.com/dpmlsqm9h/image/upload/v1774736356/stories/img.jpg'
+        category:
+          type: String
+          description: MongoDB ObjectId категорії
+          example: '643a1b2c3d4e5f6a7b8c9d0e'
+        ownerId:
+          type: String
+          description: MongoDB ObjectId власника нотатки
+          example: '642f9d1a2b3c4d5e6f7a8b9c'
+        rate:
+          type: number
+          description: Кількість збережень нотатки користувачами
+          example: 12
+        date:
+          type: string
+          description: Дата публікації у форматі ISO 8601 (зберігається як String)
+          example: '2026-03-28T10:00:00.000Z'
+      required: [_id, title, article, img, category, ownerId]
 
     RegisterRequest:
       type: object
       properties:
         name:
           type: string
+          minLength: 2
+          maxLength: 32
+          example: 'Іван Мандрівник'
         email:
           type: string
+          format: email
+          maxLength: 64
+          example: 'ivan@example.com'
         password:
           type: string
+          minLength: 8
+          maxLength: 128
+          format: password
+          example: 'securepassword123'
       required: [name, email, password]
 
     LoginRequest:
@@ -164,145 +254,251 @@ components:
       properties:
         email:
           type: string
+          format: email
+          example: 'ivan@example.com'
         password:
           type: string
+          format: password
+          example: 'securepassword123'
       required: [email, password]
 
+    CreateStoryRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          example: 'Похід у Карпати'
+        article:
+          type: string
+          minLength: 1
+          example: 'Ми вирушили ранком із Яремче...'
+        category:
+          type: string
+          description: MongoDB ObjectId категорії
+          pattern: '^[a-fA-F0-9]{24}$'
+          example: '641a1b2c3d4e5f6a7b8c9d0e'
+        img:
+          type: string
+          format: binary
+          description: Фото нотатки (обов'язковий файл)
+      required: [title, article, category, img]
+
 paths:
-  /auth/register:
+  /api/auth/register:
     post:
-      summary: Register a new user
+      tags: [Auth]
+      summary: Реєстрація нового користувача
+      description: |
+        Створює нового користувача та відкриває нову сесію.
+        Відповідь встановлює три http-only cookie: `accessToken`, `refreshToken`, `sessionId`.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/RegisterRequest'
+            example:
+              name: 'Іван Мандрівник'
+              email: 'ivan@example.com'
+              password: 'securepassword123'
       responses:
         '201':
-          description: Created user
+          description: Користувача створено. Cookie встановлено.
+          headers:
+            Set-Cookie:
+              description: Встановлює `accessToken`, `refreshToken`, `sessionId`
+              schema:
+                type: string
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
-              examples:
-                success:
-                  value:
-                    _id: '642f9d...'
-                    name: 'Jane Doe'
-                    email: 'jane@example.com'
-                    avatar: 'https://.../avatar.png'
+              example:
+                _id: '642f9d1a2b3c4d5e6f7a8b9c'
+                name: 'Іван Мандрівник'
+                email: 'ivan@example.com'
+                avatarUrl: 'https://res.cloudinary.com/dpmlsqm9h/image/upload/v1774736356/default_avatar.png'
+                articlesAmount: 0
+                savedArticles: []
+                createdAt: '2026-03-28T21:40:34.169Z'
+                updatedAt: '2026-03-28T21:40:34.169Z'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '409':
           $ref: '#/components/responses/Conflict'
 
-  /auth/login:
+  /api/auth/login:
     post:
-      summary: Login user
+      tags: [Auth]
+      summary: Вхід користувача
+      description: |
+        Автентифікує користувача та відкриває нову сесію.
+        Відповідь встановлює три http-only cookie: `accessToken`, `refreshToken`, `sessionId`.
+        Попередня сесія автоматично видаляється.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: 'ivan@example.com'
+              password: 'securepassword123'
       responses:
         '200':
-          description: Logged in user (cookies set)
+          description: Успішний вхід. Cookie встановлено.
+          headers:
+            Set-Cookie:
+              description: Встановлює `accessToken`, `refreshToken`, `sessionId`
+              schema:
+                type: string
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
-              examples:
-                success:
-                  value:
-                    _id: '642f9d...'
-                    name: 'Jane Doe'
-                    email: 'jane@example.com'
-                    avatar: 'https://.../avatar.png'
+              example:
+                _id: '642f9d1a2b3c4d5e6f7a8b9c'
+                name: 'Іван Мандрівник'
+                email: 'ivan@example.com'
+                avatarUrl: 'https://res.cloudinary.com/dpmlsqm9h/image/upload/v1774736356/default_avatar.png'
+                articlesAmount: 3
+                savedArticles:
+                  - '68498236a100312bea037fe6'
+                  - '68498236a100312bea023fe6'
+                createdAt: '2026-03-28T21:40:34.169Z'
+                updatedAt: '2026-03-29T10:15:00.000Z'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /auth/logout:
+  /api/auth/logout:
     post:
-      summary: Logout (clears cookies)
+      tags: [Auth]
+      summary: Вихід з системи
+      description: |
+        Видаляє поточну сесію і очищає всі cookie автентифікації.
+        Потребує дійсного `accessToken` в cookie.
+      security:
+        - cookieAuth: []
       responses:
         '204':
-          description: Logged out
+          description: Успішний вихід. Cookie очищено.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
-  /auth/refresh:
+  /api/auth/refresh:
     post:
-      summary: Refresh session tokens
+      tags: [Auth]
+      summary: Оновлення сесії
+      description: |
+        Оновлює токени сесії, використовуючи `refreshToken` та `sessionId` з cookie.
+        Стара сесія видаляється, нова створюється.
+        Потребує дійсних cookie `refreshToken` та `sessionId`.
+        `refreshToken` дійсний 24 години.
+      security:
+        - cookieAuth: []
       responses:
         '200':
-          description: Session refreshed
+          description: Сесію оновлено. Нові cookie встановлено.
+          headers:
+            Set-Cookie:
+              description: Встановлює нові `accessToken`, `refreshToken`, `sessionId`
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+              example:
+                message: 'Session refreshed'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
-  /categories:
+  /api/categories:
     get:
-      summary: List categories
+      tags: [Categories]
+      summary: Список усіх категорій
+      description: Повертає всі категорії, відсортовані за алфавітом.
       responses:
         '200':
-          description: Categories list
+          description: Масив категорій
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: '#/components/schemas/Category'
-              examples:
-                success:
-                  value:
-                    - _id: '641a...'
-                      category: 'Nature'
-                    - _id: '641b...'
-                      category: 'Mountains'
+              example:
+                - _id: '641a1b2c3d4e5f6a7b8c9d0e'
+                  category: 'Гори'
+                - _id: '641b2c3d4e5f6a7b8c9d0e1f'
+                  category: 'Ліси'
+                - _id: '641c3d4e5f6a7b8c9d0e1f2a'
+                  category: 'Природа'
         '500':
           $ref: '#/components/responses/InternalError'
 
-  /stories:
+  /api/stories:
     get:
-      summary: Get all stories (paginated)
+      tags: [Stories]
+      summary: Список усіх нотаток (з пагінацією)
+      description: |
+        Повертає нотатки відсортовані за рейтингом (поле `rate`) від найбільшого.
+        Можна фільтрувати за категорією.
       parameters:
-        - in: query
-          name: page
-          schema:
-            type: integer
-        - in: query
-          name: perPage
-          schema:
-            type: integer
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
         - in: query
           name: category
           schema:
             type: string
+            pattern: '^[a-fA-F0-9]{24}$'
+          description: MongoDB ObjectId категорії для фільтрації
+          example: '641a1b2c3d4e5f6a7b8c9d0e'
       responses:
         '200':
-          description: Paginated stories
+          description: Пагінований список нотаток
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedStories'
-              examples:
-                success:
-                  value:
-                    page: 1
-                    perPage: 6
-                    totalPages: 2
-                    totalStories: 10
-                    hasNextPage: true
-                    stories:
-                      - _id: '643...'
-                        title: 'Hike in the Carpathians'
-                        article: '...'
-                        img: 'https://.../img.jpg'
-                        category:
-                          _id: '641a...'
-                          category: 'Mountains'
-                        ownerId:
-                          _id: '642f...'
-                          name: 'Jane Doe'
-                        rate: 5
-                        date: '2026-03-28'
+              example:
+                page: 1
+                perPage: 6
+                totalPages: 4
+                totalStories: 22
+                hasNextPage: true
+                stories:
+                  - _id: '643a1b2c3d4e5f6a7b8c9d0e'
+                    title: 'Похід у Карпати'
+                    article: 'Ми вирушили ранком із Яремче...'
+                    img: 'https://res.cloudinary.com/dpmlsqm9h/image/upload/stories/img.jpg'
+                    category:
+                      _id: '641a1b2c3d4e5f6a7b8c9d0e'
+                      category: 'Гори'
+                    ownerId:
+                      _id: '642f9d1a2b3c4d5e6f7a8b9c'
+                      name: 'Іван Мандрівник'
+                      avatarUrl: 'https://res.cloudinary.com/dpmlsqm9h/image/upload/default_avatar.png'
+                    rate: 12
+                    date: '2026-03-28T10:00:00.000Z'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
     post:
-      summary: Create a story (authenticated)
+      tags: [Stories]
+      summary: Створення нової нотатки
+      description: |
+        Створює нову подорожню нотатку. Завантажує зображення на Cloudinary.
+        Збільшує лічильник `articlesAmount` у профілі автора.
+        Потребує автентифікації.
       security:
         - cookieAuth: []
       requestBody:
@@ -310,39 +506,28 @@ paths:
         content:
           multipart/form-data:
             schema:
-              type: object
-              properties:
-                title:
-                  type: string
-                article:
-                  type: string
-                category:
-                  type: string
-                img:
-                  type: string
-                  format: binary
+              $ref: '#/components/schemas/CreateStoryRequest'
       responses:
         '201':
-          description: Created story
+          description: Нотатку створено. Повертає populated об'єкт нотатки.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Story'
-              examples:
-                success:
-                  value:
-                    _id: '643...'
-                    title: 'Hike in the Carpathians'
-                    article: '...'
-                    img: 'https://.../img.jpg'
-                    category:
-                      _id: '641a...'
-                      category: 'Mountains'
-                    ownerId:
-                      _id: '642f...'
-                      name: 'Jane Doe'
-                    rate: 0
-                    date: '2026-03-28'
+              example:
+                _id: '643a1b2c3d4e5f6a7b8c9d0e'
+                title: 'Похід у Карпати'
+                article: 'Ми вирушили ранком із Яремче...'
+                img: 'https://res.cloudinary.com/dpmlsqm9h/image/upload/v1774736356/stories/story_642f9d_1711620000000.jpg'
+                category:
+                  _id: '641a1b2c3d4e5f6a7b8c9d0e'
+                  category: 'Гори'
+                ownerId:
+                  _id: '642f9d1a2b3c4d5e6f7a8b9c'
+                  name: 'Іван Мандрівник'
+                  avatarUrl: 'https://res.cloudinary.com/dpmlsqm9h/image/upload/default_avatar.png'
+                rate: 0
+                date: '2026-03-28T10:00:00.000Z'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -350,250 +535,467 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
 
-  /stories/popular:
+  /api/stories/popular:
     get:
-      summary: Get popular stories
+      tags: [Stories]
+      summary: Популярні нотатки
+      description: |
+        Повертає до 10 найпопулярніших нотаток, відсортованих за рейтингом.
+        Нотатки без жодного збереження не включаються.
       responses:
         '200':
-          description: List of popular stories
-
-  /stories/{id}:
-    get:
-      summary: Get story by id
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Story
+          description: Масив популярних нотаток
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Story'
-              examples:
-                success:
-                  value:
-                    _id: '643...'
-                    title: 'Hike in the Carpathians'
-                    article: 'Full text...'
-                    img: 'https://.../img.jpg'
-                    category:
-                      _id: '641a...'
-                      category: 'Mountains'
-                    ownerId:
-                      _id: '642f...'
-                      name: 'Jane Doe'
-                    rate: 5
-                    date: '2026-03-28'
+                type: array
+                items:
+                  $ref: '#/components/schemas/Story'
+              example:
+                - _id: '643a1b2c3d4e5f6a7b8c9d0e'
+                  title: 'Похід у Карпати'
+                  article: 'Ми вирушили ранком із Яремче...'
+                  img: 'https://res.cloudinary.com/dpmlsqm9h/image/upload/stories/img.jpg'
+                  category:
+                    _id: '641a1b2c3d4e5f6a7b8c9d0e'
+                    category: 'Гори'
+                  ownerId:
+                    _id: '642f9d1a2b3c4d5e6f7a8b9c'
+                    name: 'Іван Мандрівник'
+                    avatarUrl: 'https://res.cloudinary.com/dpmlsqm9h/image/upload/default_avatar.png'
+                  rate: 42
+                  date: '2026-03-28T10:00:00.000Z'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/stories/{id}:
+    get:
+      tags: [Stories]
+      summary: Отримати нотатку за ID
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Об'єкт нотатки
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  data:
+                    $ref: '#/components/schemas/Story'
+              example:
+                status: 200
+                data:
+                  _id: '643a1b2c3d4e5f6a7b8c9d0e'
+                  title: 'Похід у Карпати'
+                  article: 'Ми вирушили ранком із Яремче...'
+                  img: 'https://res.cloudinary.com/dpmlsqm9h/image/upload/stories/img.jpg'
+                  category:
+                    _id: '641a1b2c3d4e5f6a7b8c9d0e'
+                    category: 'Гори'
+                  ownerId:
+                    _id: '642f9d1a2b3c4d5e6f7a8b9c'
+                    name: 'Іван Мандрівник'
+                    avatarUrl: 'https://res.cloudinary.com/dpmlsqm9h/image/upload/default_avatar.png'
+                  rate: 12
+                  date: '2026-03-28T10:00:00.000Z'
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /stories/{id}/recommended:
+  /api/stories/{id}/recommended:
     get:
-      summary: Get recommended stories for a given story
+      tags: [Stories]
+      summary: Рекомендовані нотатки
+      description: |
+        Повертає до 3 нотаток тієї ж категорії, виключаючи поточну.
+        Використовується для блоку "Схожі нотатки".
       parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/IdParam'
       responses:
         '200':
-          description: List of recommended stories
-
-  /stories/{id}/save:
-    patch:
-      summary: Save (bookmark) a story for the current user
-      security:
-        - cookieAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Saved
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-
-  /stories/{id}/delete:
-    patch:
-      summary: Unsave a story for the current user
-      security:
-        - cookieAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Unsaved
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-
-  /profile/me:
-    get:
-      summary: Get current user profile
-      security:
-        - cookieAuth: []
-      responses:
-        '200':
-          description: Current user
+          description: Масив рекомендованих нотаток (до 3 елементів)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                type: array
+                maxItems: 3
+                items:
+                  $ref: '#/components/schemas/Story'
+              example:
+                - _id: '643b2c3d4e5f6a7b8c9d0e1f'
+                  title: 'Гуцульщина взимку'
+                  article: 'Зима в Карпатах особлива...'
+                  img: 'https://res.cloudinary.com/dpmlsqm9h/image/upload/stories/img2.jpg'
+                  category:
+                    _id: '641a1b2c3d4e5f6a7b8c9d0e'
+                    category: 'Гори'
+                  ownerId:
+                    _id: '642f9d1a2b3c4d5e6f7a8b9c'
+                    name: 'Іван Мандрівник'
+                    avatarUrl: 'https://res.cloudinary.com/dpmlsqm9h/image/upload/default_avatar.png'
+                  rate: 5
+                  date: '2026-02-15T08:00:00.000Z'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
-  /profile/my-stories:
-    get:
-      summary: Get stories of current user (paginated)
+  /api/stories/{id}/save:
+    patch:
+      tags: [Stories]
+      summary: Зберегти нотатку
+      description: |
+        Додає нотатку до списку збережених поточного користувача.
+        Збільшує рейтинг нотатки (поле `rate`) на 1.
+        Якщо нотатку вже збережено, повертає 409.
       security:
         - cookieAuth: []
       parameters:
-        - in: query
-          name: page
-          schema:
-            type: integer
-        - in: query
-          name: perPage
-          schema:
-            type: integer
+        - $ref: '#/components/parameters/IdParam'
       responses:
         '200':
-          description: Paginated stories
+          description: Нотатку збережено
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: 'Story saved successfully'
+                  data:
+                    type: object
+                    properties:
+                      rate:
+                        type: integer
+                        description: Оновлений рейтинг нотатки
+                        example: 13
+                      savedArticles:
+                        type: array
+                        description: Оновлений список збережених нотаток користувача
+                        items:
+                          type: string
+                        example: ['643a1b2c3d4e5f6a7b8c9d0e']
+              example:
+                status: 200
+                message: 'Story saved successfully'
+                data:
+                  rate: 13
+                  savedArticles:
+                    - '643a1b2c3d4e5f6a7b8c9d0e'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Нотатку вже збережено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                status: 409
+                message: 'Story already saved'
+
+  /api/stories/{id}/delete:
+    patch:
+      tags: [Stories]
+      summary: Видалити нотатку зі збережених
+      description: |
+        Видаляє нотатку зі списку збережених поточного користувача.
+        Зменшує рейтинг нотатки (поле `rate`) на 1.
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Нотатку видалено зі збережених
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: 'Story unsaved successfully'
+                  data:
+                    type: object
+                    properties:
+                      rate:
+                        type: integer
+                        description: Оновлений рейтинг нотатки
+                        example: 11
+                      savedArticles:
+                        type: array
+                        description: Оновлений список збережених нотаток користувача
+                        items:
+                          type: string
+                        example: []
+              example:
+                status: 200
+                message: 'Story unsaved successfully'
+                data:
+                  rate: 11
+                  savedArticles: []
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/profile/me:
+    get:
+      tags: [Profile]
+      summary: Профіль поточного користувача
+      description: Повертає повний профіль авторизованого користувача.
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Профіль користувача
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  data:
+                    $ref: '#/components/schemas/User'
+              example:
+                status: 200
+                data:
+                  _id: '642f9d1a2b3c4d5e6f7a8b9c'
+                  name: 'Іван Мандрівник'
+                  email: 'ivan@example.com'
+                  avatarUrl: 'https://res.cloudinary.com/dpmlsqm9h/image/upload/default_avatar.png'
+                  articlesAmount: 5
+                  savedArticles:
+                    - '68498236a100312bea037fe6'
+                  createdAt: '2026-03-28T21:40:34.169Z'
+                  updatedAt: '2026-03-29T10:15:00.000Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/profile/my-stories:
+    get:
+      tags: [Profile]
+      summary: Нотатки поточного користувача (з пагінацією)
+      description: |
+        Повертає нотатки авторизованого користувача, відсортовані від найновіших.
+        За замовчуванням 6 нотаток на сторінці.
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Пагінований список власних нотаток
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedStoriesData'
+              example:
+                data:
+                  stories:
+                    - _id: '643a1b2c3d4e5f6a7b8c9d0e'
+                      title: 'Похід у Карпати'
+                      article: 'Ми вирушили ранком із Яремче...'
+                      img: 'https://res.cloudinary.com/dpmlsqm9h/image/upload/stories/img.jpg'
+                      category:
+                        _id: '641a1b2c3d4e5f6a7b8c9d0e'
+                        category: 'Гори'
+                      ownerId:
+                        _id: '642f9d1a2b3c4d5e6f7a8b9c'
+                        name: 'Іван Мандрівник'
+                        avatarUrl: 'https://res.cloudinary.com/dpmlsqm9h/image/upload/default_avatar.png'
+                      rate: 12
+                      date: '2026-03-28T10:00:00.000Z'
+                  totalItems: 5
+                  totalPages: 1
+                  currentPage: 1
+                  hasNextPage: false
+                  hasPreviousPage: false
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/profile/saved-stories:
+    get:
+      tags: [Profile]
+      summary: Збережені нотатки поточного користувача (з пагінацією)
+      description: |
+        Повертає нотатки, збережені авторизованим користувачем, відсортовані за рейтингом.
+        За замовчуванням 6 нотаток на сторінці.
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Пагінований список збережених нотаток
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedStories'
-          '401':
-            $ref: '#/components/responses/Unauthorized'
+              example:
+                page: 1
+                perPage: 6
+                totalPages: 1
+                totalStories: 2
+                hasNextPage: false
+                stories:
+                  - _id: '643a1b2c3d4e5f6a7b8c9d0e'
+                    title: 'Похід у Карпати'
+                    article: 'Ми вирушили ранком із Яремче...'
+                    img: 'https://res.cloudinary.com/dpmlsqm9h/image/upload/stories/img.jpg'
+                    category:
+                      _id: '641a1b2c3d4e5f6a7b8c9d0e'
+                      category: 'Гори'
+                    ownerId:
+                      _id: '642f9d1a2b3c4d5e6f7a8b9c'
+                      name: 'Іван Мандрівник'
+                      avatarUrl: 'https://res.cloudinary.com/dpmlsqm9h/image/upload/default_avatar.png'
+                    rate: 12
+                    date: '2026-03-28T10:00:00.000Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
-  /profile/saved-stories:
+  /api/travellers:
     get:
-      summary: Get saved stories for current user
-      security:
-        - cookieAuth: []
+      tags: [Travellers]
+      summary: Список мандрівників (з пагінацією)
+      description: |
+        Повертає користувачів, які мають хоча б одну нотатку (`articlesAmount > 0`),
+        відсортованих за кількістю нотаток від найбільшої.
+        Email не включається у відповідь.
       parameters:
-        - in: query
-          name: page
-          schema:
-            type: integer
+        - $ref: '#/components/parameters/PageParam'
         - in: query
           name: perPage
           schema:
             type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+          description: Кількість елементів на сторінці (за замовчуванням 10)
       responses:
         '200':
-          description: Paginated saved stories
-          '401':
-            $ref: '#/components/responses/Unauthorized'
-
-  /profile/edit:
-    patch:
-      summary: Update current user profile (multipart)
-      security:
-        - cookieAuth: []
-      requestBody:
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                password:
-                  type: string
-                avatar:
-                  type: string
-                  format: binary
-      responses:
-        '200':
-          description: Updated user
+          description: Пагінований список мандрівників
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
-              examples:
-                success:
-                  value:
-                    _id: '642f...'
-                    name: 'Jane Doe'
-                    email: 'jane@example.com'
-                    avatar: 'https://.../avatar.png'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  /travellers:
-    get:
-      summary: List travellers (paginated)
-      parameters:
-        - in: query
-          name: page
-          schema:
-            type: integer
-        - in: query
-          name: limit
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Paginated travellers
+                $ref: '#/components/schemas/PaginatedTravellers'
+              example:
+                data:
+                  users:
+                    - _id: '642f9d1a2b3c4d5e6f7a8b9c'
+                      name: 'Іван Мандрівник'
+                      avatarUrl: 'https://res.cloudinary.com/dpmlsqm9h/image/upload/default_avatar.png'
+                      articlesAmount: 12
+                      savedArticles:
+                        - '643a1b2c3d4e5f6a7b8c9d0e'
+                  page: 1
+                  perPage: 10
+                  totalItems: 35
+                  totalPages: 4
+                  hasNextPage: true
+                  hasPreviousPage: false
         '500':
           $ref: '#/components/responses/InternalError'
 
-  /travellers/{id}:
+  /api/travellers/{id}:
     get:
-      summary: Get traveller profile by id
+      tags: [Travellers]
+      summary: Профіль мандрівника за ID
+      description: |
+        Повертає публічний профіль мандрівника.
+        Email не включається у відповідь.
       parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/IdParam'
       responses:
         '200':
-          description: Traveller profile
+          description: Публічний профіль мандрівника
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/TravellerPublic'
+              example:
+                data:
+                  _id: '642f9d1a2b3c4d5e6f7a8b9c'
+                  name: 'Іван Мандрівник'
+                  avatarUrl: 'https://res.cloudinary.com/dpmlsqm9h/image/upload/default_avatar.png'
+                  articlesAmount: 12
+                  savedArticles:
+                    - '643a1b2c3d4e5f6a7b8c9d0e'
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /travellers/{id}/stories:
+  /api/travellers/{id}/stories:
     get:
-      summary: Get stories for a traveller
+      tags: [Travellers]
+      summary: Нотатки мандрівника (з пагінацією)
+      description: |
+        Повертає нотатки обраного мандрівника, відсортовані від найновіших.
+        За замовчуванням 6 нотаток на сторінці.
       parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-        - in: query
-          name: page
-          schema:
-            type: integer
-        - in: query
-          name: limit
-          schema:
-            type: integer
+        - $ref: '#/components/parameters/IdParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
       responses:
         '200':
-          description: Paginated stories for traveller
+          description: Пагінований список нотаток мандрівника
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedStoriesData'
+              example:
+                data:
+                  stories:
+                    - _id: '643a1b2c3d4e5f6a7b8c9d0e'
+                      title: 'Похід у Карпати'
+                      article: 'Ми вирушили ранком із Яремче...'
+                      img: 'https://res.cloudinary.com/dpmlsqm9h/image/upload/stories/img.jpg'
+                      category:
+                        _id: '641a1b2c3d4e5f6a7b8c9d0e'
+                        category: 'Гори'
+                      ownerId:
+                        _id: '642f9d1a2b3c4d5e6f7a8b9c'
+                        name: 'Іван Мандрівник'
+                        avatarUrl: 'https://res.cloudinary.com/dpmlsqm9h/image/upload/default_avatar.png'
+                      rate: 12
+                      date: '2026-03-28T10:00:00.000Z'
+                  totalItems: 12
+                  totalPages: 2
+                  currentPage: 1
+                  hasNextPage: true
+                  hasPreviousPage: false
         '400':
           $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'

@@ -32,12 +32,6 @@ const storySchema = new Schema(
     date: {
       type: String,
     },
-    savedByUsers: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: 'user',
-      },
-    ],
   },
   {
     timestamps: false,
