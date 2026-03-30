@@ -30,14 +30,12 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
+app.use(docsRouter);
 app.use(storiesRouter);
 app.use(authRoutes);
-app.use(profileRoutes);
 app.use(travellersRouter);
 app.use(categoriesRoutes);
-
-// Docs routes (Swagger UI and raw spec)
-app.use(docsRouter);
+app.use(profileRoutes);
 
 app.use(errors());
 app.use(notFoundHandler);
