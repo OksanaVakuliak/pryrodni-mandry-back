@@ -4,7 +4,7 @@ import { swaggerMiddleware, sendSpec } from '../controllers/docsController.js';
 
 const router = Router();
 
-router.use('/api/docs', swaggerUi.serve, swaggerMiddleware);
-router.get('/api/docs/openapi.yaml', sendSpec);
+router.use('/', swaggerUi.serve, swaggerMiddleware);
+router.get('/openapi.yaml', sendSpec);
 
 export default router;

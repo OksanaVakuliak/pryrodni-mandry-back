@@ -15,20 +15,12 @@ const router = Router();
 
 router.use(authenticate);
 
-router.get('/api/profile/me', getMyProfile);
-router.get(
-  '/api/profile/my-stories',
-  celebrate(paginationQuerySchema),
-  getMyStories,
-);
-router.get(
-  '/api/profile/saved-stories',
-  celebrate(paginationQuerySchema),
-  getSavedStories,
-);
+router.get('/me', getMyProfile);
+router.get('/my-stories', celebrate(paginationQuerySchema), getMyStories);
+router.get('/saved-stories', celebrate(paginationQuerySchema), getSavedStories);
 
 // router.patch(
-//   '/api/profile/edit',
+//   '/edit',
 //   upload.single('avatar'),
 //   celebrate(updateProfileSchema),
 //   updateProfile,
