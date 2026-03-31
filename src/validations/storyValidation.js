@@ -1,10 +1,10 @@
 import { Joi, Segments } from 'celebrate';
 import { isValidJoi } from '../middleware/isValidId.js';
-import { paginationQuerySchema } from './commonValidation.js';
+import { paginationFields } from './commonValidation.js';
 
 export const getAllStoriesSchema = {
   [Segments.QUERY]: Joi.object({
-    ...paginationQuerySchema,
+    ...paginationFields,
     category: Joi.string().custom(isValidJoi).messages({
       'string.hex': 'Category must be a valid hex string',
     }),
