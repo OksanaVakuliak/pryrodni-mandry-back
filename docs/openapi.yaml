@@ -211,11 +211,11 @@ components:
           format: uri
           example: 'https://res.cloudinary.com/dpmlsqm9h/image/upload/v1774736356/stories/img.jpg'
         category:
-          type: String
+          type: string
           description: MongoDB ObjectId категорії
           example: '643a1b2c3d4e5f6a7b8c9d0e'
         ownerId:
-          type: String
+          type: string
           description: MongoDB ObjectId власника нотатки
           example: '642f9d1a2b3c4d5e6f7a8b9c'
         rate:
@@ -223,7 +223,7 @@ components:
           description: Кількість збережень нотатки користувачами
           example: 12
         date:
-          type: string
+          type: date
           description: Дата публікації у форматі ISO 8601 (зберігається як String)
           example: '2026-03-28T10:00:00.000Z'
       required: [_id, title, article, img, category, ownerId]

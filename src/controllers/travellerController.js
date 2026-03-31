@@ -11,15 +11,14 @@ export const getTravellers = async (req, res) => {
 
   const queryFilter = { articlesAmount: { $gt: 0 } };
 
-  const [users, totalItems] = await Promise.all([
-    User.find(queryFilter)
-      .select('-password -email -updatedAt -createdAt -__v')
-      .sort({ articlesAmount: -1 })
-      .skip(skip)
-      .limit(perPage),
-    User.countDocuments(queryFilter),
-  ]);
+  const travellersQuery = User.find(queryFilter)
+    .select('-password -email -updatedAt -createdAt -__v')
+    .sort({ articlesAmount: -1 });
 
+  const [users, totalItems] = await Promise.all([
+    travellersQuery.clone().skip(skip).limit(perPage),
+    travellersQuery.clone().countDocuments(),
+  ]);
   const totalPages = Math.ceil(totalItems / perPage);
 
   res.status(200).json({
