@@ -30,12 +30,12 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
-app.use(docsRouter);
-app.use(storiesRouter);
-app.use(authRoutes);
-app.use(travellersRouter);
-app.use(categoriesRoutes);
-app.use(profileRoutes);
+app.use('/api/docs', docsRouter);
+app.use('/api/auth', authRoutes);
+app.use('/api/stories', storiesRouter);
+app.use('/api/travellers', travellersRouter);
+app.use('/api/categories', categoriesRoutes);
+app.use('/api/profile', profileRoutes);
 
 app.use(errors());
 app.use(notFoundHandler);

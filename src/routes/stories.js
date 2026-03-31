@@ -22,42 +22,38 @@ import {
 
 const storiesRouter = Router();
 
-storiesRouter.get(
-  '/api/stories',
-  celebrate(getAllStoriesSchema),
-  getAllStories,
-);
+storiesRouter.get('/', celebrate(getAllStoriesSchema), getAllStories);
 
 storiesRouter.get(
-  '/api/stories/popular',
+  '/popular',
   celebrate(paginationQuerySchema),
   getPopularStories,
 );
 
 storiesRouter.get(
-  '/api/stories/:id/recommended',
+  '/:id/recommended',
   celebrate(validIdSchema),
   getRecommendedStories,
 );
 
-storiesRouter.get('/api/stories/:id', celebrate(validIdSchema), getStoryById);
+storiesRouter.get('/:id', celebrate(validIdSchema), getStoryById);
 
 storiesRouter.patch(
-  '/api/stories/:id/save',
+  '/:id/save',
   authenticate,
   celebrate(validIdSchema),
   patchSaveStory,
 );
 
 storiesRouter.patch(
-  '/api/stories/:id/delete',
+  '/:id/delete',
   authenticate,
   celebrate(validIdSchema),
   patchUnsaveStory,
 );
 
 storiesRouter.post(
-  '/api/stories',
+  '/',
   authenticate,
   upload.single('img'),
   celebrate(createStorySchema),

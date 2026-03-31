@@ -90,13 +90,21 @@ export const patchSaveStory = async (req, res) => {
     throw createHttpError(409, 'Story already saved');
   }
 
+  const incrementStoryRate = Story.findByIdAndUpdate(
+    storyId,
+    { $inc: { rate: 1 } },
+    { returnDocument: 'after' },
+  );
+
+  const pushArticleToUser = User.findByIdAndUpdate(
+    userId,
+    { $push: { savedArticles: storyId } },
+    { returnDocument: 'after' },
+  );
+
   const [updatedStory, updatedUser] = await Promise.all([
-    Story.findByIdAndUpdate(storyId, { $inc: { rate: 1 } }, { new: true }),
-    User.findByIdAndUpdate(
-      userId,
-      { $push: { savedArticles: storyId } },
-      { new: true },
-    ),
+    incrementStoryRate,
+    pushArticleToUser,
   ]);
 
   if (!updatedStory) {
@@ -117,13 +125,21 @@ export const patchUnsaveStory = async (req, res) => {
   const { id: storyId } = req.params;
   const userId = req.user._id;
 
+  const updateStoryRate = Story.findByIdAndUpdate(
+    storyId,
+    { $inc: { rate: -1 } },
+    { returnDocument: 'after' },
+  );
+
+  const updateUserSavedList = User.findByIdAndUpdate(
+    userId,
+    { $pull: { savedArticles: storyId } },
+    { returnDocument: 'after' },
+  );
+
   const [updatedStory, updatedUser] = await Promise.all([
-    Story.findByIdAndUpdate(storyId, { $inc: { rate: -1 } }, { new: true }),
-    User.findByIdAndUpdate(
-      userId,
-      { $pull: { savedArticles: storyId } },
-      { new: true },
-    ),
+    updateStoryRate,
+    updateUserSavedList,
   ]);
 
   if (!updatedStory) {
@@ -168,18 +184,23 @@ export const createStory = async (req, res, next) => {
     throw createHttpError(500, 'Image upload failed');
   }
 
+  const storyData = {
+    title: title.trim(),
+    article,
+    img: result,
+    category: new mongoose.Types.ObjectId(category),
+    ownerId: req.user._id,
+    date: new Date().toISOString(),
+  };
+
+  const createStoryPromise = Story.create(storyData);
+  const updateUserStatsPromise = User.findByIdAndUpdate(userId, {
+    $inc: { articlesAmount: 1 },
+  });
+
   const [story] = await Promise.all([
-    Story.create({
-      title: title.trim(),
-      article,
-      img: result,
-      category: new mongoose.Types.ObjectId(category),
-      ownerId: req.user._id,
-      date: new Date().toISOString(),
-    }),
-    User.findByIdAndUpdate(userId, {
-      $inc: { articlesAmount: 1 },
-    }),
+    createStoryPromise,
+    updateUserStatsPromise,
   ]);
 
   const populated = await Story.findById(story._id)

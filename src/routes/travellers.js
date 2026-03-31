@@ -12,17 +12,12 @@ import {
 
 const router = Router();
 
-router.get('/api/travellers', celebrate(paginationQuerySchema), getTravellers);
+router.get('/', celebrate(paginationQuerySchema), getTravellers);
 
+router.get('/:id', celebrate(validIdSchema), getTravellerProfile);
 router.get(
-  '/api/travellers/:id',
-  celebrate(validIdSchema),
-  getTravellerProfile,
-);
-router.get(
-  '/api/travellers/:id/stories',
-  celebrate(validIdSchema),
-  celebrate(paginationQuerySchema),
+  '/:id/stories',
+  celebrate({ ...validIdSchema, ...paginationQuerySchema }),
   getTravellerStories,
 );
 
