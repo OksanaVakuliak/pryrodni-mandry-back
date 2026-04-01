@@ -4,7 +4,7 @@ import { saveFileToCloudinary } from '../utils/saveFileToCloudinary.js';
 import Story from '../models/story.js';
 import User from '../models/user.js';
 import getUploadedFile from '../utils/fileUpload.js';
-import parsePagination from '../utils/pagination.js';
+import { parsePagination, getPaginationMeta } from '../utils/pagination.js';
 
 export const getStoryById = async (req, res) => {
   const { id } = req.params;
@@ -17,10 +17,7 @@ export const getStoryById = async (req, res) => {
     throw createHttpError(404, 'Story not found');
   }
 
-  res.status(200).json({
-    status: 200,
-    data: story,
-  });
+  res.status(200).json(story);
 };
 
 export const getAllStories = async (req, res) => {
@@ -42,12 +39,23 @@ export const getAllStories = async (req, res) => {
     baseQuery.clone().countDocuments(),
   ]);
 
-  const totalPages = Math.ceil(totalStories / perPage);
-  const hasNextPage = page < totalPages;
+  const { totalPages, hasNextPage, hasPreviousPage } = getPaginationMeta(
+    totalStories,
+    page,
+    perPage,
+  );
 
-  res
-    .status(200)
-    .json({ page, perPage, totalPages, totalStories, hasNextPage, stories });
+  const response = {
+    page,
+    perPage,
+    totalItems: totalStories,
+    totalPages,
+    hasNextPage,
+    hasPreviousPage,
+    stories,
+  };
+
+  res.status(200).json(response);
 };
 
 export const getPopularStories = async (req, res) => {
@@ -111,14 +119,12 @@ export const patchSaveStory = async (req, res) => {
     throw createHttpError(404, 'Story not found');
   }
 
-  res.status(200).json({
-    status: 200,
-    message: 'Story saved successfully',
-    data: {
-      rate: updatedStory.rate,
-      savedArticles: updatedUser.savedArticles,
-    },
-  });
+  const response = {
+    rate: updatedStory.rate,
+    savedArticles: updatedUser.savedArticles,
+  };
+
+  res.status(200).json(response);
 };
 
 export const patchUnsaveStory = async (req, res) => {
@@ -146,32 +152,19 @@ export const patchUnsaveStory = async (req, res) => {
     throw createHttpError(404, 'Story not found');
   }
 
-  res.status(200).json({
-    status: 200,
-    message: 'Story unsaved successfully',
-    data: {
-      rate: updatedStory.rate,
-      savedArticles: updatedUser.savedArticles,
-    },
-  });
+  const response = {
+    rate: updatedStory.rate,
+    savedArticles: updatedUser.savedArticles,
+  };
+
+  res.status(200).json(response);
 };
 
 export const createStory = async (req, res, next) => {
   const { title, article, category } = req.body;
   const userId = req.user._id;
 
-  if (!title || !article || !category) {
-    throw createHttpError(400, 'Missing required fields');
-  }
-
   const uploadedFile = getUploadedFile(req);
-  if (!uploadedFile || !uploadedFile.buffer) {
-    throw createHttpError(400, 'No image file provided');
-  }
-
-  if (!req.file) {
-    throw createHttpError(400, 'Field name must be "img" and file is required');
-  }
 
   const buffer = Buffer.isBuffer(uploadedFile.buffer)
     ? uploadedFile.buffer
