@@ -11,4 +11,11 @@ export const parsePagination = (
   return { page, perPage, skip };
 };
 
-export default parsePagination;
+export const getPaginationMeta = (totalItems, page, perPage) => {
+  const totalPages = Math.ceil(totalItems / perPage);
+  return {
+    totalPages,
+    hasNextPage: page < totalPages,
+    hasPreviousPage: page > 1,
+  };
+};

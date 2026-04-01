@@ -1,7 +1,7 @@
 import User from '../models/user.js';
 import Story from '../models/story.js';
 import createHttpError from 'http-errors';
-import parsePagination from '../utils/pagination.js';
+import { parsePagination, getPaginationMeta } from '../utils/pagination.js';
 
 export const getTravellers = async (req, res) => {
   const { page, perPage, skip } = parsePagination(req.query, {
@@ -19,19 +19,23 @@ export const getTravellers = async (req, res) => {
     travellersQuery.clone().skip(skip).limit(perPage),
     travellersQuery.clone().countDocuments(),
   ]);
-  const totalPages = Math.ceil(totalItems / perPage);
+  const { totalPages, hasNextPage, hasPreviousPage } = getPaginationMeta(
+    totalItems,
+    page,
+    perPage,
+  );
 
-  res.status(200).json({
-    data: {
-      users,
-      page,
-      perPage,
-      totalItems,
-      totalPages,
-      hasNextPage: page < totalPages,
-      hasPreviousPage: page > 1,
-    },
-  });
+  const response = {
+    page,
+    perPage,
+    totalItems,
+    totalPages,
+    hasNextPage,
+    hasPreviousPage,
+    users,
+  };
+
+  res.status(200).json(response);
 };
 
 export const getTravellerProfile = async (req, res, next) => {
@@ -41,9 +45,7 @@ export const getTravellerProfile = async (req, res, next) => {
     throw createHttpError(404, 'Traveller not found');
   }
 
-  res.status(200).json({
-    data: traveller,
-  });
+  res.status(200).json(traveller);
 };
 
 export const getTravellerStories = async (req, res, next) => {
@@ -62,18 +64,21 @@ export const getTravellerStories = async (req, res, next) => {
     storiesQuery.clone().countDocuments(),
   ]);
 
-  const totalPages = Math.ceil(totalItems / perPage);
+  const { totalPages, hasNextPage, hasPreviousPage } = getPaginationMeta(
+    totalItems,
+    page,
+    perPage,
+  );
 
-  const result = {
-    stories,
+  const response = {
+    page,
+    perPage,
     totalItems,
     totalPages,
-    currentPage: page,
-    hasNextPage: totalPages > page,
-    hasPreviousPage: page > 1,
+    hasNextPage,
+    hasPreviousPage,
+    stories,
   };
 
-  res.status(200).json({
-    data: result,
-  });
+  res.status(200).json(response);
 };
