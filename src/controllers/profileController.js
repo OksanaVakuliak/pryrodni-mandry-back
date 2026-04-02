@@ -1,5 +1,5 @@
 import Story from '../models/story.js';
-import parsePagination from '../utils/pagination.js';
+import { parsePagination, getPaginationMeta } from '../utils/pagination.js';
 // import bcrypt from 'bcrypt';
 // import { saveFileToCloudinary } from '../utils/saveFileToCloudinary.js';
 
@@ -26,18 +26,23 @@ export const getMyStories = async (req, res) => {
     baseQuery.clone().countDocuments(),
   ]);
 
-  const totalPages = Math.ceil(totalItems / perPage);
+  const { totalPages, hasNextPage, hasPreviousPage } = getPaginationMeta(
+    totalItems,
+    page,
+    perPage,
+  );
 
-  res.status(200).json({
-    data: {
-      stories,
-      totalItems,
-      totalPages,
-      currentPage: page,
-      hasNextPage: totalPages > page,
-      hasPreviousPage: page > 1,
-    },
-  });
+  const response = {
+    page,
+    perPage,
+    totalItems,
+    totalPages,
+    hasNextPage,
+    hasPreviousPage,
+    stories,
+  };
+
+  res.status(200).json(response);
 };
 
 export const getSavedStories = async (req, res) => {
@@ -59,12 +64,23 @@ export const getSavedStories = async (req, res) => {
     baseQuery.clone().countDocuments(),
   ]);
 
-  const totalPages = Math.ceil(totalStories / perPage);
-  const hasNextPage = page < totalPages;
+  const { totalPages, hasNextPage, hasPreviousPage } = getPaginationMeta(
+    totalStories,
+    page,
+    perPage,
+  );
 
-  res
-    .status(200)
-    .json({ page, perPage, totalPages, totalStories, hasNextPage, stories });
+  const response = {
+    page,
+    perPage,
+    totalItems: totalStories,
+    totalPages,
+    hasNextPage,
+    hasPreviousPage,
+    stories,
+  };
+
+  res.status(200).json(response);
 };
 
 // export const updateProfile = async (req, res, next) => {
