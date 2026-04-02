@@ -1,17 +1,10 @@
-import createHttpError from 'http-errors';
-import User from '../models/user.js';
 import Story from '../models/story.js';
 import { parsePagination, getPaginationMeta } from '../utils/pagination.js';
 // import bcrypt from 'bcrypt';
 // import { saveFileToCloudinary } from '../utils/saveFileToCloudinary.js';
 
 export const getMyProfile = async (req, res) => {
-  const userId = req.user?._id;
-
-  const user = await User.findById(userId);
-  if (!user) {
-    throw createHttpError(404, 'User not found');
-  }
+  const user = req.user;
 
   res.status(200).json(user);
 };
