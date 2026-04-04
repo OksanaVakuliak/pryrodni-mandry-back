@@ -20,7 +20,7 @@ router.get('/me', getMyProfile);
 router.get('/my-stories', celebrate(paginationQuerySchema), getMyStories);
 router.get('/saved-stories', celebrate(paginationQuerySchema), getSavedStories);
 
-router.patch('/avatar', upload.single('avatar'), updateAvatar);
+router.patch('/avatar', upload.single('avatarUrl'), updateAvatar);
 // router.patch(
 //   '/edit',
 //   upload.single('avatar'),
