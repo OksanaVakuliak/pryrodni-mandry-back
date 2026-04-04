@@ -2,9 +2,10 @@ import Story from '../models/story.js';
 import User from '../models/user.js';
 import { parsePagination, getPaginationMeta } from '../utils/pagination.js';
 import { v2 as cloudinary } from 'cloudinary';
-import createHttpError from 'http-errors';
 // import bcrypt from 'bcrypt';
 import { saveFileToCloudinary } from '../utils/saveFileToCloudinary.js';
+import { getUploadedFile } from '../utils/fileUpload.js';
+import createHttpError from 'http-errors';
 
 export const getMyProfile = async (req, res) => {
   const user = req.user;
@@ -85,40 +86,39 @@ export const getSavedStories = async (req, res) => {
 
   res.status(200).json(response);
 };
-export const updateAvatar = async (req, res, next) => {
-  try {
-    if (!req.file) {
-      throw createHttpError(400, 'Файл не завантажено');
-    }
+// ============================================
 
-    const userId = req.user._id;
-    const user = await User.findById(userId);
+export const updateAvatar = async (req, res) => {
+  const userId = req.user._id;
+  const user = await User.findById(userId);
 
-    if (!user) {
-      throw createHttpError(404, 'Користувача не знайдено');
-    }
+  const uploadedFile = getUploadedFile(req);
 
-    if (user.avatarUrl && user.avatarUrl.includes('cloudinary')) {
-      const publicId = user.avatarUrl
-        .split('/')
-        .slice(-2)
-        .join('/')
-        .split('.')[0];
-      await cloudinary.uploader.destroy(publicId);
-    }
-    const avatarUrl = await saveFileToCloudinary(req.file, 'avatars');
+  const buffer = Buffer.isBuffer(uploadedFile.buffer)
+    ? uploadedFile.buffer
+    : Buffer.from(uploadedFile.buffer);
 
-    user.avatarUrl = avatarUrl;
-    await user.save();
-
-    res.status(200).json({
-      status: 200,
-      message: 'Аватар успішно оновлено',
-      data: { avatarUrl: user.avatarUrl },
-    });
-  } catch (error) {
-    next(error);
+  if (user.avatarUrl && user.avatarUrl.includes('cloudinary')) {
+    const publicId = user.avatarUrl
+      .split('/')
+      .slice(-2)
+      .join('/')
+      .split('.')[0];
+    await cloudinary.uploader.destroy(publicId);
   }
+
+  const result = await saveFileToCloudinary({ buffer }, 'avatars');
+
+  if (!result) {
+    throw createHttpError(500, 'Image upload failed');
+  }
+
+  user.avatarUrl = result;
+  await user.save();
+
+  res.status(200).json({
+    avatarUrl: result,
+  });
 };
 // export const updateProfile = async (req, res, next) => {
 //   const updates = {};
