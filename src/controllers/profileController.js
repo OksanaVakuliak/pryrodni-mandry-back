@@ -151,52 +151,44 @@ export const updateAvatar = async (req, res) => {
 //   return res.status(200).json(user);
 // };
 
-export const requestProfileUpdate = async (req, res, next) => {
-  try {
-    const { name, password } = req.body;
-    const user = req.user;
+export const requestProfileUpdate = async (req, res) => {
+  const { name, password } = req.body;
+  const user = req.user;
 
-    const pendingUpdates = {};
-    if (name) pendingUpdates.name = name;
-    if (password) {
-      pendingUpdates.password = await bcrypt.hash(password, 10);
-    }
-
-    const token = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
-
-    await UpdateRequest.deleteMany({ userId: user._id });
-
-    await UpdateRequest.create({
-      userId: user._id,
-      pendingUpdates,
-      token,
-      expiresAt,
-    });
-
-    const templatePath = path.resolve(
-      'src',
-      'templates',
-      'confirm-update.html',
-    );
-    const templateSource = await fs.readFile(templatePath, 'utf-8');
-    const template = handlebars.compile(templateSource);
-
-    const html = template({
-      userName: user.name,
-      confirmLink: `${process.env.FRONTEND_URL}/profile/confirm/${token}`,
-    });
-
-    await sendEmail({
-      to: user.email,
-      subject: 'Confirm your profile update',
-      html,
-    });
-
-    res.status(200).json({
-      message: 'Confirmation email sent successfully',
-    });
-  } catch (error) {
-    next(error);
+  const pendingUpdates = {};
+  if (name) pendingUpdates.name = name;
+  if (password) {
+    pendingUpdates.password = await bcrypt.hash(password, 10);
   }
+
+  const token = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+
+  await UpdateRequest.deleteMany({ userId: user._id });
+
+  await UpdateRequest.create({
+    userId: user._id,
+    pendingUpdates,
+    token,
+    expiresAt,
+  });
+
+  const templatePath = path.resolve('src', 'templates', 'confirm-update.html');
+  const templateSource = await fs.readFile(templatePath, 'utf-8');
+  const template = handlebars.compile(templateSource);
+
+  const html = template({
+    userName: user.name,
+    confirmLink: `${process.env.FRONTEND_URL}/profile/confirm/${token}`,
+  });
+
+  await sendEmail({
+    to: user.email,
+    subject: 'Confirm your profile update',
+    html,
+  });
+
+  res.status(200).json({
+    message: 'Confirmation email sent successfully',
+  });
 };

@@ -1,29 +1,105 @@
 <!doctype html>
-<html>
-  <body style="font-family: sans-serif; line-height: 1.6">
-    <h2>Підтвердження зміни даних</h2>
-    <p>Вітаємо, {{userName}}!</p>
-    <p>Ми отримали запит на зміну вашого імені або пароля.</p>
-    <p>
-      Будь ласка, натисніть на кнопку нижче, щоб підтвердити оновлення профілю:
-    </p>
-    <p>
-      <a
-        href="{{confirmLink}}"
-        style="
-          background-color: #4caf50;
-          color: white;
-          padding: 10px 20px;
-          text-decoration: none;
-          border-radius: 5px;
-        "
-      >
-        Підтвердити зміни
-      </a>
-    </p>
-    <p>
-      Це посилання дійсне 30 хвилин. Якщо ви не робили цього запиту, просто
-      ігноруйте цей лист.
-    </p>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #e2e5d8;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        color: #1a1a1a;
+      }
+      .wrapper {
+        width: 100%;
+        table-layout: fixed;
+        padding: 40px 0;
+      }
+      .content {
+        max-width: 600px;
+        margin: 0 auto;
+        background-color: #f1f3eb;
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      }
+      .header {
+        background-color: #4caf50;
+        padding: 30px;
+        text-align: center;
+      }
+      .header h1 {
+        color: #ffffff;
+        margin: 0;
+        font-size: 24px;
+        font-weight: 600;
+      }
+      .body-text {
+        padding: 40px 30px;
+        text-align: center;
+      }
+      .body-text h2 {
+        margin-top: 0;
+        color: #1a1a1a;
+      }
+      .button-container {
+        padding: 20px 0 40px;
+      }
+      .btn {
+        background-color: #4caf50;
+        color: #ffffff !important;
+        padding: 14px 32px;
+        text-decoration: none;
+        border-radius: 12px;
+        font-weight: 600;
+        display: inline-block;
+      }
+      .footer {
+        padding: 20px;
+        text-align: center;
+        font-size: 13px;
+        color: #666;
+      }
+      .divider {
+        height: 1px;
+        background-color: #d1d5c5;
+        margin: 20px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrapper">
+      <div class="content">
+        <div class="header">
+          <h1>Природні Мандри</h1>
+        </div>
+
+        <div class="body-text">
+          <h2>Вітаємо, {{userName}}!</h2>
+          <p>
+            Ми отримали запит на зміну даних вашого профілю (імені або пароля).
+          </p>
+          <p>
+            Щоб завершити оновлення, будь ласка, підтвердіть зміни, натиснувши
+            на кнопку нижче:
+          </p>
+
+          <div class="button-container">
+            <a href="{{confirmLink}}" class="btn">Підтвердити зміни</a>
+          </div>
+
+          <div class="divider"></div>
+
+          <p style="font-size: 14px; color: #555">
+            Це посилання дійсне <strong>30 хвилин</strong>.<br />
+            Якщо ви не робили цього запиту, просто ігноруйте цей лист.
+          </p>
+        </div>
+      </div>
+
+      <div class="footer">
+        <p>© 2026 Природні Мандри. Всі права захищено.</p>
+      </div>
+    </div>
   </body>
 </html>
