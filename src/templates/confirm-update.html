@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+  <body style="font-family: sans-serif; line-height: 1.6">
+    <h2>Підтвердження зміни даних</h2>
+    <p>Вітаємо, {{userName}}!</p>
+    <p>Ми отримали запит на зміну вашого імені або пароля.</p>
+    <p>
+      Будь ласка, натисніть на кнопку нижче, щоб підтвердити оновлення профілю:
+    </p>
+    <p>
+      <a
+        href="{{confirmLink}}"
+        style="
+          background-color: #4caf50;
+          color: white;
+          padding: 10px 20px;
+          text-decoration: none;
+          border-radius: 5px;
+        "
+      >
+        Підтвердити зміни
+      </a>
+    </p>
+    <p>
+      Це посилання дійсне 30 хвилин. Якщо ви не робили цього запиту, просто
+      ігноруйте цей лист.
+    </p>
+  </body>
+</html>

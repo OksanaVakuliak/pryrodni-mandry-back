@@ -4,6 +4,7 @@ import {
   getMyStories,
   getSavedStories,
   updateAvatar,
+  requestProfileUpdate,
   // updateProfile,
 } from '../controllers/profileController.js';
 import { celebrate } from 'celebrate';
@@ -11,6 +12,7 @@ import { authenticate } from '../middleware/authenticate.js';
 import { paginationQuerySchema } from '../validations/commonValidation.js';
 // import { updateProfileSchema } from '../validations/userValidation.js';
 import { upload } from '../middleware/multer.js';
+import { updateProfileRequestSchema } from '../validations/authValidation.js';
 
 const router = Router();
 
@@ -27,5 +29,12 @@ router.patch('/avatar', upload.single('avatarUrl'), updateAvatar);
 //   celebrate(updateProfileSchema),
 //   updateProfile,
 // );
+
+router.post(
+  '/update-request',
+  authenticate,
+  celebrate(updateProfileRequestSchema),
+  requestProfileUpdate,
+);
 
 export default router;
