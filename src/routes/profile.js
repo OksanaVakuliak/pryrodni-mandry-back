@@ -23,16 +23,8 @@ router.get('/my-stories', celebrate(paginationQuerySchema), getMyStories);
 router.get('/saved-stories', celebrate(paginationQuerySchema), getSavedStories);
 
 router.patch('/avatar', upload.single('avatarUrl'), updateAvatar);
-// router.patch(
-//   '/edit',
-//   upload.single('avatar'),
-//   celebrate(updateProfileSchema),
-//   updateProfile,
-// );
-
 router.post(
   '/update-request',
-  authenticate,
   celebrate(updateProfileRequestSchema),
   requestProfileUpdate,
 );

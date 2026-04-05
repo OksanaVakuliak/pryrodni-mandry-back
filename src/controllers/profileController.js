@@ -93,7 +93,6 @@ export const getSavedStories = async (req, res) => {
 
   res.status(200).json(response);
 };
-// ============================================
 
 export const updateAvatar = async (req, res) => {
   const userId = req.user._id;
@@ -127,29 +126,6 @@ export const updateAvatar = async (req, res) => {
     avatarUrl: result,
   });
 };
-// export const updateProfile = async (req, res, next) => {
-//   const updates = {};
-
-//   if (req.body.name) {
-//     updates.name = req.body.name;
-//   }
-
-//   if (req.body.password) {
-//     const hashedPassword = await bcrypt.hash(req.body.password, 10);
-//     updates.password = hashedPassword;
-//   }
-
-//   if (req.file) {
-//     const avatarUrl = await saveFileToCloudinary(req.file, 'avatars');
-//     updates.avatar = avatarUrl;
-//   }
-
-//   const user = await User.findByIdAndUpdate(req.user._id, updates, {
-//     returnDocument: 'after',
-//   }).select('-password');
-
-//   return res.status(200).json(user);
-// };
 
 export const requestProfileUpdate = async (req, res) => {
   const { name, password } = req.body;
