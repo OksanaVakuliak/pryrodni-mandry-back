@@ -5,14 +5,16 @@ import {
   getSavedStories,
   updateAvatar,
   requestProfileUpdate,
-  // updateProfile,
+  confirmProfileUpdate,
 } from '../controllers/profileController.js';
 import { celebrate } from 'celebrate';
 import { authenticate } from '../middleware/authenticate.js';
 import { paginationQuerySchema } from '../validations/commonValidation.js';
-// import { updateProfileSchema } from '../validations/userValidation.js';
+import {
+  confirmProfileUpdateSchema,
+  updateProfileRequestSchema,
+} from '../validations/userValidation.js';
 import { upload } from '../middleware/multer.js';
-import { updateProfileRequestSchema } from '../validations/authValidation.js';
 
 const router = Router();
 
@@ -27,6 +29,11 @@ router.post(
   '/update-request',
   celebrate(updateProfileRequestSchema),
   requestProfileUpdate,
+);
+router.post(
+  '/update-confirm',
+  celebrate(confirmProfileUpdateSchema),
+  confirmProfileUpdate,
 );
 
 export default router;

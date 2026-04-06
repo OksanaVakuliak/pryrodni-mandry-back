@@ -1,19 +1,22 @@
-// import { Joi, Segments } from 'celebrate';
+import { Joi, Segments } from 'celebrate';
 
-// export const updateProfileSchema = {
-//   [Segments.BODY]: Joi.object({
-//     name: Joi.string().min(2).max(32).messages({
-//       'string.base': 'Name must be a string',
-//       'string.min': 'Name must be at least {#limit} characters',
-//       'string.max': 'Name must be at most {#limit} characters',
-//     }),
-//     password: Joi.string().min(8).max(128).messages({
-//       'string.base': 'Password must be a string',
-//       'string.min': 'Password must be at least {#limit} characters',
-//       'string.max': 'Password must be at most {#limit} characters',
-//     }),
-//     avatar: Joi.string().messages({
-//       'string.uri': 'Avatar must be a valid URL',
-//     }),
-//   }),
-// };
+export const confirmProfileUpdateSchema = {
+  [Segments.BODY]: Joi.object({
+    token: Joi.string().required().messages({
+      'string.pattern.base': 'Невірний формат токена',
+    }),
+  }),
+};
+
+export const updateProfileRequestSchema = {
+  [Segments.BODY]: Joi.object()
+    .keys({
+      name: Joi.string().min(2).optional(),
+      password: Joi.string().min(8).optional(),
+    })
+    .or('name', 'password')
+    .messages({
+      'object.missing':
+        'At least one field (name or password) must be provided',
+    }),
+};
