@@ -57,26 +57,28 @@ export const getMyStories = async (req, res) => {
 };
 
 export const getSavedStories = async (req, res) => {
+  const userId = req.user._id;
+
   const { page, perPage, skip } = parsePagination(req.query, {
     page: 1,
     perPage: 6,
   });
-  const userId = req.user._id;
 
-  const filter = { savedByUsers: userId };
+  const user = await User.findById(userId).select('savedArticles');
+  const savedArticles = user?.savedArticles || [];
 
-  const baseQuery = Story.find(filter)
-    .sort({ rate: -1 })
+  const baseQuery = Story.find({ _id: { $in: savedArticles } })
+    .sort({ _id: -1 })
     .populate('ownerId', 'name avatarUrl')
     .populate('category', 'category');
 
-  const [stories, totalStories] = await Promise.all([
+  const [stories, totalItems] = await Promise.all([
     baseQuery.clone().skip(skip).limit(perPage),
     baseQuery.clone().countDocuments(),
   ]);
 
   const { totalPages, hasNextPage, hasPreviousPage } = getPaginationMeta(
-    totalStories,
+    totalItems,
     page,
     perPage,
   );
@@ -84,7 +86,7 @@ export const getSavedStories = async (req, res) => {
   const response = {
     page,
     perPage,
-    totalItems: totalStories,
+    totalItems,
     totalPages,
     hasNextPage,
     hasPreviousPage,
