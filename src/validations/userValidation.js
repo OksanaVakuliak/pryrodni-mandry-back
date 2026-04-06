@@ -7,3 +7,16 @@ export const confirmProfileUpdateSchema = {
     }),
   }),
 };
+
+export const updateProfileRequestSchema = {
+  [Segments.BODY]: Joi.object()
+    .keys({
+      name: Joi.string().min(2).optional(),
+      password: Joi.string().min(8).optional(),
+    })
+    .or('name', 'password')
+    .messages({
+      'object.missing':
+        'At least one field (name or password) must be provided',
+    }),
+};

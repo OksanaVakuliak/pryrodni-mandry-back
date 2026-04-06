@@ -10,9 +10,11 @@ import {
 import { celebrate } from 'celebrate';
 import { authenticate } from '../middleware/authenticate.js';
 import { paginationQuerySchema } from '../validations/commonValidation.js';
-import { confirmProfileUpdateSchema } from '../validations/userValidation.js';
+import {
+  confirmProfileUpdateSchema,
+  updateProfileRequestSchema,
+} from '../validations/userValidation.js';
 import { upload } from '../middleware/multer.js';
-import { updateProfileRequestSchema } from '../validations/authValidation.js';
 
 const router = Router();
 
