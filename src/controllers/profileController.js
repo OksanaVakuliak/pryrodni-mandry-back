@@ -1,7 +1,18 @@
+import crypto from 'node:crypto';
+import bcrypt from 'bcrypt';
+import path from 'node:path';
+import fs from 'node:fs/promises';
+import handlebars from 'handlebars';
+
 import Story from '../models/story.js';
+import User from '../models/user.js';
 import { parsePagination, getPaginationMeta } from '../utils/pagination.js';
-// import bcrypt from 'bcrypt';
-// import { saveFileToCloudinary } from '../utils/saveFileToCloudinary.js';
+import { v2 as cloudinary } from 'cloudinary';
+import { saveFileToCloudinary } from '../utils/saveFileToCloudinary.js';
+import { getUploadedFile } from '../utils/fileUpload.js';
+import createHttpError from 'http-errors';
+import { UpdateRequest } from '../models/updateRequests.js';
+import { sendEmail } from '../utils/sendMail.js';
 
 export const getMyProfile = async (req, res) => {
   const user = req.user;
@@ -46,26 +57,28 @@ export const getMyStories = async (req, res) => {
 };
 
 export const getSavedStories = async (req, res) => {
+  const userId = req.user._id;
+
   const { page, perPage, skip } = parsePagination(req.query, {
     page: 1,
     perPage: 6,
   });
-  const userId = req.user._id;
 
-  const filter = { savedByUsers: userId };
+  const user = await User.findById(userId).select('savedArticles');
+  const savedArticles = user?.savedArticles || [];
 
-  const baseQuery = Story.find(filter)
-    .sort({ rate: -1 })
+  const baseQuery = Story.find({ _id: { $in: savedArticles } })
+    .sort({ _id: -1 })
     .populate('ownerId', 'name avatarUrl')
     .populate('category', 'category');
 
-  const [stories, totalStories] = await Promise.all([
+  const [stories, totalItems] = await Promise.all([
     baseQuery.clone().skip(skip).limit(perPage),
     baseQuery.clone().countDocuments(),
   ]);
 
   const { totalPages, hasNextPage, hasPreviousPage } = getPaginationMeta(
-    totalStories,
+    totalItems,
     page,
     perPage,
   );
@@ -73,7 +86,7 @@ export const getSavedStories = async (req, res) => {
   const response = {
     page,
     perPage,
-    totalItems: totalStories,
+    totalItems,
     totalPages,
     hasNextPage,
     hasPreviousPage,
@@ -83,26 +96,77 @@ export const getSavedStories = async (req, res) => {
   res.status(200).json(response);
 };
 
-// export const updateProfile = async (req, res, next) => {
-//   const updates = {};
+export const updateAvatar = async (req, res) => {
+  const userId = req.user._id;
+  const user = await User.findById(userId);
 
-//   if (req.body.name) {
-//     updates.name = req.body.name;
-//   }
+  const uploadedFile = getUploadedFile(req);
 
-//   if (req.body.password) {
-//     const hashedPassword = await bcrypt.hash(req.body.password, 10);
-//     updates.password = hashedPassword;
-//   }
+  const buffer = Buffer.isBuffer(uploadedFile.buffer)
+    ? uploadedFile.buffer
+    : Buffer.from(uploadedFile.buffer);
 
-//   if (req.file) {
-//     const avatarUrl = await saveFileToCloudinary(req.file, 'avatars');
-//     updates.avatar = avatarUrl;
-//   }
+  if (user.avatarUrl && user.avatarUrl.includes('cloudinary')) {
+    const publicId = user.avatarUrl
+      .split('/')
+      .slice(-2)
+      .join('/')
+      .split('.')[0];
+    await cloudinary.uploader.destroy(publicId);
+  }
 
-//   const user = await User.findByIdAndUpdate(req.user._id, updates, {
-//     returnDocument: 'after',
-//   }).select('-password');
+  const result = await saveFileToCloudinary({ buffer }, 'avatars');
 
-//   return res.status(200).json(user);
-// };
+  if (!result) {
+    throw createHttpError(500, 'Image upload failed');
+  }
+
+  user.avatarUrl = result;
+  await user.save();
+
+  res.status(200).json({
+    avatarUrl: result,
+  });
+};
+
+export const requestProfileUpdate = async (req, res) => {
+  const { name, password } = req.body;
+  const user = req.user;
+
+  const pendingUpdates = {};
+  if (name) pendingUpdates.name = name;
+  if (password) {
+    pendingUpdates.password = await bcrypt.hash(password, 10);
+  }
+
+  const token = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+
+  await UpdateRequest.deleteMany({ userId: user._id });
+
+  await UpdateRequest.create({
+    userId: user._id,
+    pendingUpdates,
+    token,
+    expiresAt,
+  });
+
+  const templatePath = path.resolve('src', 'templates', 'confirm-update.html');
+  const templateSource = await fs.readFile(templatePath, 'utf-8');
+  const template = handlebars.compile(templateSource);
+
+  const html = template({
+    userName: user.name,
+    confirmLink: `${process.env.FRONTEND_URL}/profile/confirm/${token}`,
+  });
+
+  await sendEmail({
+    to: user.email,
+    subject: 'Confirm your profile update',
+    html,
+  });
+
+  res.status(200).json({
+    message: 'Confirmation email sent successfully',
+  });
+};
