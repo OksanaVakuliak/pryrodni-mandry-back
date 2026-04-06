@@ -168,3 +168,29 @@ export const requestProfileUpdate = async (req, res) => {
     message: 'Confirmation email sent successfully',
   });
 };
+
+export const confirmProfileUpdate = async (req, res) => {
+  const { token } = req.body;
+
+  const updateInfo = await UpdateRequest.findOne({ token });
+  if (!updateInfo) {
+    return res.status(400).json({ message: 'Bad request' });
+  }
+
+  if (updateInfo.expiresAt < new Date()) {
+    return res.status(400).json({ message: 'Data is expired' });
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(
+    updateInfo.userId,
+    updateInfo.pendingUpdates,
+    { returnDocument: 'after' },
+  );
+
+  await UpdateRequest.deleteOne({ _id: updateInfo._id });
+
+  const result = updatedUser.toObject();
+  delete result.password;
+
+  res.status(200).json(result);
+};
