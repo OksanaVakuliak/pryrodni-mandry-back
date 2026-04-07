@@ -223,8 +223,9 @@ components:
           description: Кількість збережень нотатки користувачами
           example: 12
         date:
-          type: date
-          description: Дата публікації у форматі ISO 8601 (зберігається як String)
+          type: string
+          format: date-time
+          description: Дата публікації у форматі ISO 8601
           example: '2026-03-28T10:00:00.000Z'
       required: [_id, title, article, img, category, ownerId]
 
@@ -380,6 +381,29 @@ components:
           users,
         ]
 
+    UpdateProfileRequest:
+      type: object
+      description: Запит на оновлення профілю (ім'я або пароль). Обов'язково хоча б одне поле.
+      properties:
+        name:
+          type: string
+          minLength: 2
+          example: 'Новий Іван'
+        password:
+          type: string
+          minLength: 8
+          format: password
+          example: 'newpassword456'
+
+    ConfirmProfileUpdateRequest:
+      type: object
+      description: Підтвердження оновлення профілю за токеном з електронного листа
+      properties:
+        token:
+          type: string
+          example: 'a3f1e2d4b5c6...'
+      required: [token]
+
 paths:
   /api/auth/register:
     post:
@@ -475,14 +499,12 @@ paths:
       summary: Вихід з системи
       description: |
         Видаляє поточну сесію і очищає всі cookie автентифікації.
-        Потребує дійсного `accessToken` в cookie.
-      security:
-        - cookieAuth: []
+        Читає `sessionId` з cookie та видаляє відповідну сесію.
+        Якщо `sessionId` відсутній — просто очищає cookie.
+        Автентифікація не потрібна.
       responses:
         '204':
           description: Успішний вихід. Cookie очищено.
-        '401':
-          $ref: '#/components/responses/Unauthorized'
 
   /api/auth/refresh:
     post:
@@ -859,6 +881,7 @@ paths:
       summary: Нотатки поточного користувача (з пагінацією)
       description: |
         Повертає нотатки авторизованого користувача, відсортовані від найновіших.
+        Поле `category` populated. Поле `ownerId` — MongoDB ObjectId (не populated).
         За замовчуванням 6 нотаток на сторінці.
       security:
         - cookieAuth: []
@@ -887,10 +910,7 @@ paths:
                     category:
                       _id: '641a1b2c3d4e5f6a7b8c9d0e'
                       category: 'Гори'
-                    ownerId:
-                      _id: '642f9d1a2b3c4d5e6f7a8b9c'
-                      name: 'Іван Мандрівник'
-                      avatarUrl: 'https://res.cloudinary.com/dpmlsqm9h/image/upload/default_avatar.png'
+                    ownerId: '642f9d1a2b3c4d5e6f7a8b9c'
                     rate: 12
                     date: '2026-03-28T10:00:00.000Z'
         '401':
@@ -901,7 +921,8 @@ paths:
       tags: [Profile]
       summary: Збережені нотатки поточного користувача (з пагінацією)
       description: |
-        Повертає нотатки, збережені авторизованим користувачем, відсортовані за рейтингом.
+        Повертає нотатки, збережені авторизованим користувачем, відсортовані від найновіших.
+        Поле `ownerId` populated (містить name та avatarUrl). Поле `category` populated.
         За замовчуванням 6 нотаток на сторінці.
       security:
         - cookieAuth: []
@@ -936,6 +957,154 @@ paths:
                       avatarUrl: 'https://res.cloudinary.com/dpmlsqm9h/image/upload/default_avatar.png'
                     rate: 12
                     date: '2026-03-28T10:00:00.000Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/profile/avatar:
+    patch:
+      tags: [Profile]
+      summary: Оновити аватар користувача
+      description: |
+        Завантажує нове фото аватара на Cloudinary та оновлює поле `avatarUrl` у профілі.
+        Якщо у користувача вже є аватар на Cloudinary — старий видаляється.
+        Потребує автентифікації.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                avatarUrl:
+                  type: string
+                  format: binary
+                  description: Файл зображення аватара
+              required: [avatarUrl]
+      responses:
+        '200':
+          description: Аватар оновлено. Повертає нове посилання.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  avatarUrl:
+                    type: string
+                    format: uri
+                    example: 'https://res.cloudinary.com/dpmlsqm9h/image/upload/v1234567890/avatars/avatar_id.jpg'
+              example:
+                avatarUrl: 'https://res.cloudinary.com/dpmlsqm9h/image/upload/v1234567890/avatars/avatar_id.jpg'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/profile/update-request:
+    post:
+      tags: [Profile]
+      summary: Запит на оновлення профілю (ім'я або пароль)
+      description: |
+        Ініціює оновлення профілю — надсилає email-лист із посиланням для підтвердження.
+        Обов'язково потрібно передати хоча б одне з полів: `name` або `password`.
+        Попередні незавершені запити на оновлення видаляються.
+        Токен підтвердження дійсний 30 хвилин.
+        Потребує автентифікації.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+            examples:
+              changeName:
+                summary: Змінити ім'я
+                value:
+                  name: 'Новий Іван'
+              changePassword:
+                summary: Змінити пароль
+                value:
+                  password: 'newpassword456'
+              changeBoth:
+                summary: Змінити обидва поля
+                value:
+                  name: 'Новий Іван'
+                  password: 'newpassword456'
+      responses:
+        '200':
+          description: Лист для підтвердження надіслано на email
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+              example:
+                message: 'Confirmation email sent successfully'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/profile/update-confirm:
+    post:
+      tags: [Profile]
+      summary: Підтвердження оновлення профілю
+      description: |
+        Застосовує зміни профілю (ім'я та/або пароль) після підтвердження токеном з email.
+        Токен має бути валідним і не прострочений (дійсний 30 хвилин).
+        Після успішного підтвердження запис про оновлення видаляється.
+        Потребує автентифікації.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmProfileUpdateRequest'
+            example:
+              token: 'a3f1e2d4b5c6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2'
+      responses:
+        '200':
+          description: Профіль оновлено. Повертає оновлений об'єкт користувача.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              example:
+                _id: '642f9d1a2b3c4d5e6f7a8b9c'
+                name: 'Новий Іван'
+                email: 'ivan@example.com'
+                avatarUrl: 'https://res.cloudinary.com/dpmlsqm9h/image/upload/default_avatar.png'
+                articlesAmount: 5
+                savedArticles:
+                  - '68498236a100312bea037fe6'
+                createdAt: '2026-03-28T21:40:34.169Z'
+                updatedAt: '2026-04-07T14:30:00.000Z'
+        '400':
+          description: Невірний або прострочений токен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                badRequest:
+                  summary: Невірний токен
+                  value:
+                    message: 'Bad request'
+                expired:
+                  summary: Токен прострочений
+                  value:
+                    message: 'Data is expired'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
@@ -1015,6 +1184,7 @@ paths:
       summary: Нотатки мандрівника (з пагінацією)
       description: |
         Повертає нотатки обраного мандрівника, відсортовані від найновіших.
+        Поле `category` populated. Поле `ownerId` — MongoDB ObjectId (не populated).
         За замовчуванням 6 нотаток на сторінці.
       parameters:
         - $ref: '#/components/parameters/IdParam'
@@ -1042,10 +1212,7 @@ paths:
                     category:
                       _id: '641a1b2c3d4e5f6a7b8c9d0e'
                       category: 'Гори'
-                    ownerId:
-                      _id: '642f9d1a2b3c4d5e6f7a8b9c'
-                      name: 'Іван Мандрівник'
-                      avatarUrl: 'https://res.cloudinary.com/dpmlsqm9h/image/upload/default_avatar.png'
+                    ownerId: '642f9d1a2b3c4d5e6f7a8b9c'
                     rate: 12
                     date: '2026-03-28T10:00:00.000Z'
         '400':
