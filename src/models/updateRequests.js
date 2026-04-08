@@ -4,7 +4,6 @@ const updateRequestSchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'users', required: true },
     pendingUpdates: {
-      name: { type: String },
       password: { type: String },
     },
     token: { type: String, required: true },
