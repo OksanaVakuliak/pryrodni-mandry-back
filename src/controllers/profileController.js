@@ -133,11 +133,20 @@ export const requestProfileUpdate = async (req, res) => {
   const { name, password } = req.body;
   const user = req.user;
 
-  const pendingUpdates = {};
-  if (name) pendingUpdates.name = name;
-  if (password) {
-    pendingUpdates.password = await bcrypt.hash(password, 10);
+  if (name) {
+    user.name = name;
+    await user.save();
   }
+
+  if (!password) {
+    const result = user.toObject();
+    delete result.password;
+    return res.status(200).json(result);
+  }
+
+  const pendingUpdates = {
+    password: await bcrypt.hash(password, 10),
+  };
 
   const token = crypto.randomBytes(32).toString('hex');
   const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
